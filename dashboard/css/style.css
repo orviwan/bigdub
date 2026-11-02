@@ -1,0 +1,381 @@
+/* Pebble 91Dub E-Ink Clock Stylesheet */
+/* Optimized for E-Ink Pearl displays & legacy Android 2.1 WebKit */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000000;
+  font-family: monospace, sans-serif;
+}
+
+#viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: -webkit-box;
+  display: -moz-box;
+  display: box;
+  display: flex;
+  -webkit-box-pack: center;
+  -moz-box-pack: center;
+  justify-content: center;
+  -webkit-box-align: center;
+  -moz-box-align: center;
+  align-items: center;
+  background-color: #000000;
+}
+
+/* 4x integer scaled Pebble canvas (144x168 -> 576x672) */
+#pebble-screen {
+  position: relative;
+  width: 576px;
+  height: 672px;
+  background-color: #ffffff;
+  overflow: hidden;
+  /* Ensure pixelated crisp edges on e-ink and high-res screens */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* Background layers */
+#bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 576px;
+  height: 672px;
+}
+
+#branding-mask-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 576px;
+  height: 76px;
+  display: none;
+}
+
+/* Status row: Meter, Bluetooth, Battery */
+#meter-layer {
+  position: absolute;
+  top: 172px;
+  left: 68px;
+  width: 48px;
+  height: 36px;
+}
+
+#bluetooth-layer {
+  position: absolute;
+  top: 172px;
+  left: 132px;
+  width: 28px;
+  height: 36px;
+}
+
+#battery-bar {
+  position: absolute;
+  top: 180px;
+  left: 452px;
+  width: 44px;
+  height: 20px;
+  background-color: #000000;
+  z-index: 2;
+}
+
+#battery-icon-layer {
+  position: absolute;
+  top: 172px;
+  left: 444px;
+  width: 64px;
+  height: 36px;
+  z-index: 3;
+}
+
+#battery-percent-tens {
+  position: absolute;
+  top: 172px;
+  left: 356px;
+  width: 20px;
+  height: 32px;
+}
+
+#battery-percent-units {
+  position: absolute;
+  top: 172px;
+  left: 380px;
+  width: 20px;
+  height: 32px;
+}
+
+#battery-percent-symbol {
+  position: absolute;
+  top: 172px;
+  left: 404px;
+  width: 28px;
+  height: 28px;
+}
+
+/* Time format (24H or PM) */
+#time-format-layer {
+  position: absolute;
+  top: 272px;
+  left: 68px;
+  width: 76px;
+  height: 32px;
+  display: none;
+}
+
+/* Day & Date */
+#day-name-layer {
+  position: absolute;
+  top: 244px;
+  left: 276px;
+  width: 136px;
+  height: 60px;
+}
+
+#date-digit-tens {
+  position: absolute;
+  top: 244px;
+  left: 432px;
+  width: 40px;
+  height: 60px;
+}
+
+#date-digit-units {
+  position: absolute;
+  top: 244px;
+  left: 484px;
+  width: 40px;
+  height: 60px;
+}
+
+/* Big Time Group (Default Mode) */
+#big-time-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 576px;
+  height: 672px;
+}
+
+#time-digit-hour-tens {
+  position: absolute;
+  top: 336px;
+  left: 40px;
+  width: 104px;
+  height: 164px;
+}
+
+#time-digit-hour-units {
+  position: absolute;
+  top: 336px;
+  left: 160px;
+  width: 104px;
+  height: 164px;
+}
+
+#separator-layer {
+  position: absolute;
+  top: 364px;
+  left: 276px;
+  width: 24px;
+  height: 108px;
+}
+
+#time-digit-min-tens {
+  position: absolute;
+  top: 336px;
+  left: 308px;
+  width: 104px;
+  height: 164px;
+}
+
+#time-digit-min-units {
+  position: absolute;
+  top: 336px;
+  left: 420px;
+  width: 104px;
+  height: 164px;
+}
+
+/* Medium Time Group (Seconds Mode) */
+#med-time-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 576px;
+  height: 672px;
+  display: none;
+}
+
+#med-digit-hour-tens {
+  position: absolute;
+  top: 352px;
+  left: 48px;
+  width: 80px;
+  height: 128px;
+}
+
+#med-digit-hour-units {
+  position: absolute;
+  top: 352px;
+  left: 140px;
+  width: 80px;
+  height: 128px;
+}
+
+#med-separator-layer {
+  position: absolute;
+  top: 372px;
+  left: 228px;
+  width: 20px;
+  height: 104px;
+}
+
+#med-digit-min-tens {
+  position: absolute;
+  top: 352px;
+  left: 260px;
+  width: 80px;
+  height: 128px;
+}
+
+#med-digit-min-units {
+  position: absolute;
+  top: 352px;
+  left: 348px;
+  width: 80px;
+  height: 128px;
+}
+
+#sec-digit-tens {
+  position: absolute;
+  top: 416px;
+  left: 436px;
+  width: 40px;
+  height: 60px;
+}
+
+#sec-digit-units {
+  position: absolute;
+  top: 416px;
+  left: 484px;
+  width: 40px;
+  height: 60px;
+}
+
+/* Invert / "Junkie Mode" */
+.inverted {
+  -webkit-filter: invert(100%);
+  -moz-filter: invert(100%);
+  -o-filter: invert(100%);
+  -ms-filter: invert(100%);
+  filter: invert(100%);
+}
+
+/* Anti-Ghosting Flash Screen */
+#eink-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  z-index: 999;
+  display: none;
+}
+
+/* Settings Touch Drawer */
+#settings-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+  border-bottom: 4px solid #000000;
+  padding: 16px;
+  z-index: 100;
+  display: none;
+  font-size: 18px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+#settings-panel h2 {
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #000;
+  padding-bottom: 6px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.setting-btn {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 8px 14px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.setting-btn.active {
+  background: #000000;
+  color: #ffffff;
+}
+
+.close-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  padding: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Tap targets for touching Nook screen */
+#top-touch-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  z-index: 50;
+  cursor: pointer;
+}
+
+#bottom-touch-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  z-index: 50;
+  cursor: pointer;
+}

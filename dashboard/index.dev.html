@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pebble 91Dub E-Ink Wall Clock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="viewport">
+    <!-- Tap triggers -->
+    <div id="top-touch-bar" title="Tap for Settings"></div>
+    <div id="bottom-touch-bar" title="Tap to Clear E-Ink Ghosting"></div>
+
+    <!-- 4x Scaled Pebble Watch Screen -->
+    <div id="pebble-screen">
+      <!-- Background & Branding -->
+      <img id="bg-layer" src="assets/images/background.png" alt="Background">
+      <img id="branding-mask-layer" src="assets/images/branding-mask.png" alt="Branding Mask">
+
+      <!-- Status Bar -->
+      <img id="meter-layer" src="assets/images/icon_meter.png" alt="Meter">
+      <img id="bluetooth-layer" src="assets/images/icon_bluetooth.png" alt="Bluetooth">
+      <div id="battery-bar"></div>
+      <img id="battery-icon-layer" src="assets/images/icon_battery.png" alt="Battery">
+      <img id="battery-percent-tens" src="assets/images/tiny_1.png" alt="Bat Tens">
+      <img id="battery-percent-units" src="assets/images/tiny_0.png" alt="Bat Units">
+      <img id="battery-percent-symbol" src="assets/images/tiny_percent.png" alt="%">
+
+      <!-- Time Format & Date -->
+      <img id="time-format-layer" src="assets/images/time_format_24H.png" alt="Time Format">
+      <img id="day-name-layer" src="assets/images/day_mon.png" alt="Day">
+      <img id="date-digit-tens" src="assets/images/datenum_0.png" alt="Date Tens">
+      <img id="date-digit-units" src="assets/images/datenum_1.png" alt="Date Units">
+
+      <!-- Big Digits (Standard Mode) -->
+      <div id="big-time-group">
+        <img id="time-digit-hour-tens" src="assets/images/num_1.png" alt="H1">
+        <img id="time-digit-hour-units" src="assets/images/num_2.png" alt="H2">
+        <img id="separator-layer" src="assets/images/separator.png" alt=":">
+        <img id="time-digit-min-tens" src="assets/images/num_3.png" alt="M1">
+        <img id="time-digit-min-units" src="assets/images/num_4.png" alt="M2">
+      </div>
+
+      <!-- Medium Digits & Seconds (Seconds Mode) -->
+      <div id="med-time-group">
+        <img id="med-digit-hour-tens" src="assets/images/med-1.png" alt="Med H1">
+        <img id="med-digit-hour-units" src="assets/images/med-2.png" alt="Med H2">
+        <img id="med-separator-layer" src="assets/images/med-separator.png" alt=":">
+        <img id="med-digit-min-tens" src="assets/images/med-3.png" alt="Med M1">
+        <img id="med-digit-min-units" src="assets/images/med-4.png" alt="Med M2">
+        <img id="sec-digit-tens" src="assets/images/sm-0.png" alt="S1">
+        <img id="sec-digit-units" src="assets/images/sm-0.png" alt="S2">
+      </div>
+    </div>
+
+    <!-- Waveform Anti-Ghosting Flash Screen -->
+    <div id="eink-flash"></div>
+
+    <!-- Settings Touch Panel -->
+    <div id="settings-panel">
+      <h2>91Dub Clock Settings</h2>
+      
+      <div class="setting-row">
+        <span>Time Format:</span>
+        <div>
+          <button id="btn-format-12" class="setting-btn">12H</button>
+          <button id="btn-format-24" class="setting-btn active">24H</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span>Seconds Display:</span>
+        <div>
+          <button id="btn-seconds-off" class="setting-btn active">Off</button>
+          <button id="btn-seconds-on" class="setting-btn">On</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span>Colon Separator:</span>
+        <div>
+          <button id="btn-colon-solid" class="setting-btn active">Solid</button>
+          <button id="btn-colon-blink" class="setting-btn">Blink</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span>Color Theme:</span>
+        <div>
+          <button id="btn-invert-off" class="setting-btn active">Normal</button>
+          <button id="btn-invert-on" class="setting-btn">Invert</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span>Pebble Logo:</span>
+        <div>
+          <button id="btn-brand-show" class="setting-btn active">Show</button>
+          <button id="btn-brand-hide" class="setting-btn">Hide</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span>Anti-Ghosting:</span>
+        <button id="btn-force-clear" class="setting-btn">Clear Screen Now</button>
+      </div>
+
+      <button id="close-settings-btn" class="close-btn">Done / Save</button>
+    </div>
+  </div>
+
+  <script src="js/clock.js"></script>
+</body>
+</html>
