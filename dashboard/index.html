@@ -587,7 +587,7 @@ window.EMBEDDED_ASSETS = {
     invert: false,
     brandingMask: false, // false = show "PEBBLE" logo
     ghostClearMinutes: 30, // Periodic anti-ghosting waveform refresh
-    batteryPercent: 100,
+    batteryPercent: 90,
     isCharging: false
   };
 
@@ -599,7 +599,7 @@ window.EMBEDDED_ASSETS = {
     return 'assets/images/' + name;
   }
 
-  // Load settings from localStorage
+  // Load settings from localStorage and URL query params
   function loadSettings() {
     try {
       if (window.localStorage) {
@@ -615,6 +615,35 @@ window.EMBEDDED_ASSETS = {
       }
     } catch (e) {
       // Ignore localStorage errors in restricted webviews
+    }
+
+    // URL parameters (e.g., ?battery=90&charging=0)
+    try {
+      if (window.location && window.location.search) {
+        var qs = window.location.search.substring(1);
+        if (qs) {
+          var pairs = qs.split('&');
+          for (var i = 0; i < pairs.length; i++) {
+            var parts = pairs[i].split('=');
+            var k = decodeURIComponent(parts[0]);
+            var v = decodeURIComponent(parts[1] || '');
+            if (k === 'battery') {
+              var b = parseInt(v, 10);
+              if (!isNaN(b)) settings.batteryPercent = b;
+            } else if (k === 'charging') {
+              settings.isCharging = (v === '1' || v === 'true');
+            } else if (k === 'invert') {
+              settings.invert = (v === '1' || v === 'true');
+            } else if (k === '24h') {
+              settings.is24h = (v === '1' || v === 'true');
+            } else if (k === 'seconds') {
+              settings.showSeconds = (v === '1' || v === 'true');
+            }
+          }
+        }
+      }
+    } catch (e2) {
+      // Ignore
     }
   }
 
