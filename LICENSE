@@ -1,0 +1,67 @@
+# Licensing & Attribution
+
+This repository combines software code, documentation, and 3D CAD mechanical models. To respect the original upstream creators and maintain open community collaboration, different components of this project are licensed as follows:
+
+---
+
+## 1. Software & Code (MIT License)
+
+The source code in this repository—including the **91Dub** web clock dashboard (`dashboard/`), local server implementation (`server/`), automation and deployment scripts (`nook_setup/scripts/`), and build scripts—is licensed under the **MIT License**:
+
+```text
+MIT License
+
+Copyright (c) 2026 Jon Barlow (orviwan) and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## 2. 3D Models & Hardware CAD (CC BY-NC-SA 4.0)
+
+The 3D CAD models, Blender master files, and print-ready STLs/3MF files in the `cad/` directory are licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**:
+
+* **Attribution:** You must give appropriate credit to Pebble Technology Corporation for the underlying watch body geometry and to Jon Barlow for the giant wall clock modifications.
+* **NonCommercial:** You may not use this material for commercial purposes (e.g., selling printed enclosures for profit).
+* **ShareAlike:** If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
+
+To view a copy of this license, visit [https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+---
+
+## 3. Upstream Attribution & Upstream CAD Notice
+
+The 3D watch body geometry in this repository is derived from the official 3D CAD drawings released by **Pebble Technology Corporation** in the official `pebble/pebble-3d` repository:
+
+* **Upstream Repository:** [https://github.com/pebble/pebble-3d](https://github.com/pebble/pebble-3d)
+* **Original Model:** `PebbleSolid-20130102.STL` / `PebbleSolid-20130102.STEP`
+* **Original Copyright:** © 2013, 2014, 2015, 2016 Pebble Technology Corporation. All Rights Reserved.
+* **Pebble CAD Statement:**
+  > *"Here's the moment you've all been waiting for: the release of Pebble's 3D drawings. We're looking forward to seeing some awesome designs on thingiverse! Where possible, PDF, STL, and STP files are included. FILES ARE FOR REFERENCE ONLY. SUBJECT TO CHANGE WITHOUT NOTICE. All Rights Reserved. 2013, 2014, 2015, 2016 Pebble Technology Corporation."*
+
+The modifications in this project (scaling by $4.314\times$, cutting the through-hole screen aperture, carving the rear drop-in pocket and bezel retaining lip for the Barnes & Noble Nook Simple Touch, bottom micro-USB cable routing, and wall-mounting keyholes) are released to the community in the spirit of Pebble's original invitation to share awesome designs on Thingiverse and MakerWorld.
+
+---
+
+## 4. Trademarks & Disclaimers
+
+* **Pebble**, **Pebble Classic**, and **Pebble Time** are registered or common-law trademarks formerly of Pebble Technology Corporation, subsequently acquired by Fitbit LLC / Google LLC.
+* **Nook** and **Nook Simple Touch** are trademarks of Barnes & Noble, Inc.
+* This project is an independent open-source hardware homage and fan preservation effort. It is not affiliated with, authorized, endorsed, or sponsored by Barnes & Noble, Pebble Technology Corporation, Fitbit LLC, or Google LLC.

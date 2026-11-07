@@ -2,6 +2,14 @@
 __pycache__/
 *.pyc
 
+# Blender auto-backups
+*.blend1
+*.blend2
+
+# Scratch & Temporary
+scratch/
+/tmp/
+
 # OS
 .DS_Store
 Thumbs.db
