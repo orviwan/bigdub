@@ -14,7 +14,8 @@
     invert: false,
     brandingMask: false, // false = show "PEBBLE" logo
     ghostClearMinutes: 30, // Periodic anti-ghosting waveform refresh
-    batteryPercent: 90,
+    batteryMode: 'day_countdown', // 'day_countdown' (00:00=100%, 12:00=50%), 'manual', or 'hardware'
+    batteryPercent: 100,
     isCharging: false
   };
 
@@ -24,6 +25,17 @@
       return window.EMBEDDED_ASSETS[name];
     }
     return 'assets/images/' + name;
+  }
+
+  // Calculate remaining percentage of day (00:00 = 100%, 12:00 = 50%, 23:59 ≈ 0%)
+  function getDayRemainingPercent() {
+    var now = new Date();
+    var minutesElapsed = now.getHours() * 60 + now.getMinutes();
+    var totalMinutes = 1440; // 24 * 60
+    var remaining = Math.round(((totalMinutes - minutesElapsed) / totalMinutes) * 100);
+    if (remaining > 100) remaining = 100;
+    if (remaining < 0) remaining = 0;
+    return remaining;
   }
 
   // Load settings from localStorage and URL query params
@@ -44,7 +56,7 @@
       // Ignore localStorage errors in restricted webviews
     }
 
-    // URL parameters (e.g., ?battery=90&charging=0)
+    // URL parameters (e.g., ?battery=90 or ?battery=day or ?invert=1)
     try {
       if (window.location && window.location.search) {
         var qs = window.location.search.substring(1);
@@ -55,8 +67,15 @@
             var k = decodeURIComponent(parts[0]);
             var v = decodeURIComponent(parts[1] || '');
             if (k === 'battery') {
-              var b = parseInt(v, 10);
-              if (!isNaN(b)) settings.batteryPercent = b;
+              if (v === 'day' || v === 'countdown') {
+                settings.batteryMode = 'day_countdown';
+              } else {
+                var b = parseInt(v, 10);
+                if (!isNaN(b)) {
+                  settings.batteryPercent = b;
+                  settings.batteryMode = 'manual';
+                }
+              }
             } else if (k === 'charging') {
               settings.isCharging = (v === '1' || v === 'true');
             } else if (k === 'invert') {
@@ -159,6 +178,10 @@
 
   // Update battery graphic
   function updateBatteryUI() {
+    if (settings.batteryMode === 'day_countdown') {
+      settings.batteryPercent = getDayRemainingPercent();
+    }
+
     var pct = settings.batteryPercent;
     var charging = settings.isCharging;
 
@@ -166,43 +189,51 @@
 
     // Draw battery fill bar (up to 44px wide at 4x scale)
     var barWidth = Math.round((pct / 100.0) * 44);
+    if (barWidth > 44) barWidth = 44;
+    if (barWidth < 0) barWidth = 0;
     el.batteryBar.style.width = barWidth + 'px';
+
+    if (charging) {
+      el.batteryBar.style.display = 'none'; // Don't cover charging lightning bolt
+    } else {
+      el.batteryBar.style.display = barWidth > 0 ? 'block' : 'none';
+    }
 
     if (pct >= 100) {
       el.batTens.style.display = 'none';
       el.batUnits.style.display = 'none';
       el.batSymbol.style.display = 'none';
-      el.batteryBar.style.display = 'block';
     } else {
       el.batTens.style.display = 'block';
       el.batUnits.style.display = 'block';
       el.batSymbol.style.display = 'block';
       el.batTens.src = getAsset('tiny_' + Math.floor(pct / 10) + '.png');
       el.batUnits.src = getAsset('tiny_' + (pct % 10) + '.png');
-      el.batteryBar.style.display = 'block';
     }
   }
 
   // Check battery API if supported
   function initBattery() {
-    try {
-      if (navigator.getBattery) {
-        navigator.getBattery().then(function (battery) {
-          function onBatChange() {
-            settings.batteryPercent = Math.round(battery.level * 100);
-            settings.isCharging = battery.charging;
-            updateBatteryUI();
-          }
-          onBatChange();
-          battery.addEventListener('levelchange', onBatChange);
-          battery.addEventListener('chargingchange', onBatChange);
-        });
-      } else {
-        updateBatteryUI();
+    if (settings.batteryMode === 'hardware') {
+      try {
+        if (navigator.getBattery) {
+          navigator.getBattery().then(function (battery) {
+            function onBatChange() {
+              settings.batteryPercent = Math.round(battery.level * 100);
+              settings.isCharging = battery.charging;
+              updateBatteryUI();
+            }
+            onBatChange();
+            battery.addEventListener('levelchange', onBatChange);
+            battery.addEventListener('chargingchange', onBatChange);
+          });
+          return;
+        }
+      } catch (e) {
+        // Fall back
       }
-    } catch (e) {
-      updateBatteryUI();
     }
+    updateBatteryUI();
   }
 
   var lastMinute = -1;
@@ -224,6 +255,11 @@
       el.dateTens.src = getAsset('datenum_' + Math.floor(dateNum / 10) + '.png');
       el.dateUnits.src = getAsset('datenum_' + (dateNum % 10) + '.png');
       lastDay = dateNum;
+    }
+
+    // Update battery countdown if minute changed
+    if (minutes !== lastMinute) {
+      updateBatteryUI();
     }
 
     // 2. Format Hour

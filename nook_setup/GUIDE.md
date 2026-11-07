@@ -175,3 +175,86 @@ E-Ink Pearl displays can experience subtle ghosting after several digit transiti
    * Colon separator Blink vs. Solid
    * Color theme: Classic vs. Invert ("Junkie Mode")
    * Pebble Branding: Show vs. Hide
+
+---
+
+## 8. Real-Time Day Countdown Battery
+
+The clock features an innovative ambient time-awareness mechanism using the Pebble battery indicator:
+
+* **How it works**:
+  * Instead of a static or disconnected battery reading, the battery gauge dynamically tracks and counts down the **remaining duration of the day**.
+  * **00:00 (Midnight)**: 100% remaining (solid 44px filled battery bar).
+  * **12:00 (Noon)**: 50% remaining (50% filled bar with `50%` digits).
+  * **23:59 (End of Day)**: 0% / 1% remaining.
+* **Calculation**:
+  $$\text{Minutes Elapsed} = \text{Hour} \times 60 + \text{Minute}$$
+  $$\text{Day Remaining \%} = \text{round}\left(\frac{1440 - \text{Minutes Elapsed}}{1440} \times 100\right)$$
+* **Manual Override via URL**:
+  You can override the day countdown with a fixed percentage by passing query parameters:
+  * `http://192.168.0.239:9191/?battery=90` (Forces 90% fixed)
+  * `http://192.168.0.239:9191/?battery=day` (Default day countdown)
+  * `http://192.168.0.239:9191/?invert=1` (Inverted Junkie Mode)
+
+---
+
+## 9. Remote Device Management via Wireless ADB
+
+The rooted Nook Simple Touch can be completely managed, monitored, and inspected over Wi-Fi without needing a physical USB connection.
+
+### 1. Connecting over Wi-Fi
+```bash
+adb connect 192.168.0.188:5555
+```
+
+### 2. Launching or Reloading the Clock
+```bash
+# Force stop previous instance
+adb shell "kill \$(ps | grep org.zirco | awk '{print \$2}')"
+
+# Launch Zirco pointing to pro-nas container
+adb shell am start -n org.zirco/.ui.activities.MainActivity -d "http://192.168.0.239:9191/"
+```
+
+### 3. Remote Framebuffer Screen Capture
+Android 2.1 lacks the modern `screencap` command. You can capture the live screen directly from the hardware Linux framebuffer (`/dev/graphics/fb0`) over ADB:
+```bash
+python3 -c "
+import subprocess, zlib, struct
+
+raw = subprocess.check_output(['adb', 'shell', 'cat /dev/graphics/fb0'])
+width, height = 600, 800
+fb16 = raw[:width*height*2]
+
+def save_png_rgb(width, height, rgb_data, filename):
+    def chunk(tag, data):
+        return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff)
+    raw_scanlines = bytearray()
+    row_bytes = width * 3
+    for y in range(height):
+        raw_scanlines.append(0)
+        raw_scanlines.extend(rgb_data[y * row_bytes : (y + 1) * row_bytes])
+    png = b'\x89PNG\r\n\x1a\n'
+    png += chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0))
+    png += chunk(b'IDAT', zlib.compress(bytes(raw_scanlines)))
+    png += chunk(b'IEND', b'')
+    with open(filename, 'wb') as f:
+        f.write(png)
+
+rgb = bytearray(width * height * 3)
+for i in range(width * height):
+    val = fb16[2*i] | (fb16[2*i+1] << 8)
+    rgb[3*i] = ((val >> 11) & 0x1F) * 255 // 31
+    rgb[3*i+1] = ((val >> 5) & 0x3F) * 255 // 63
+    rgb[3*i+2] = (val & 0x1F) * 255 // 31
+
+save_png_rgb(width, height, rgb, 'nook_screenshot.png')
+print('Captured nook_screenshot.png!')
+"
+```
+
+### 4. Forcing E-Ink Waveform Flashes (Clearing Ghosting)
+To trigger an immediate full-panel E-Ink waveform inversion cycle:
+```bash
+adb shell "echo 1 > /sys/class/graphics/fb0/epd_refresh"
+```
