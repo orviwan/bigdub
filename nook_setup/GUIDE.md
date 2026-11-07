@@ -105,37 +105,61 @@ Because `dashboard/index.html` is completely self-contained (all 72 authentic 91
    ```
 3. Bookmark this page and set it as the browser homepage.
 
-### Mode 2: Local Network Server (Raspberry Pi or Homelab)
-If you prefer hosting centrally or updating the dashboard across multiple clocks:
+### Mode 2: Local Network Server (Docker on NAS or Raspberry Pi)
+If you prefer hosting centrally or updating the dashboard across multiple clocks without touching the device storage:
 
-* **Using Python:**
-  ```bash
-  python3 server/server.py 8080
-  ```
-* **Using Docker:**
+* **Using Docker on Homelab / NAS (e.g., `pro-nas`):**
+  We host the clock in a tiny (< 3 MB RAM) `nginx:alpine` container.
   ```bash
   docker compose -f server/docker-compose.yml up -d
   ```
-* In the Nook's browser, navigate to:
-  ```
-  http://<YOUR_SERVER_IP>:8080/
+  The clock is served at `http://192.168.0.239:9191/` (port 9191 matches **91Dub**).
+
+* **Using Standalone Python:**
+  ```bash
+  python3 server/server.py 8080
   ```
 
 ---
 
-## 6. Full-Screen Browser Setup
+## 6. Full-Screen Browser Setup (Zirco Browser)
 
-To hide the notification status bar and URL address bar:
+> [!WARNING]
+> **Do NOT use Opera Mini:** Opera Mini is a cloud-transcoding proxy browser. All requests are routed through Opera's external cloud servers in Norway/Iceland, which cannot reach local `file:///` paths (reporting `"file: said unknown protocol"`) or RFC 1918 private LAN IPs (reporting `"Server timed out"`). Furthermore, Opera Mini only renders static snapshots and disables client-side JavaScript intervals (`setInterval`), preventing live time updates.
 
-### Opera Mini / Opera Mobile / Opera Classic:
-1. Sideload a legacy build (Opera Mini 7.x or Opera Mobile 11/12 compatible with Android 2.1).
-2. Open Opera settings:
-   * Enable **Full Screen** mode.
-   * In `opera:config`:
-     * Disable smooth scrolling.
-     * Disable image animations.
-     * Set default zoom to 100%.
-3. Set default homepage to `file:///sdcard/clock/index.html`.
+### Recommended Browser: Zirco Browser (Included)
+Zirco Browser is an open-source (GPLv3) Android 2.1+ WebKit browser that runs completely locally on the device, executes full JavaScript, and supports true immersive fullscreen (hiding both the status bar and the address bar).
+
+We provide the tested, verified APK in `nook_setup/apks/org.zirco_18.apk`.
+
+#### Automated Setup via ADB
+Run our automated configuration script:
+```bash
+./nook_setup/scripts/setup_zirco.sh 192.168.0.188 http://192.168.0.239:9191/
+```
+Or for 100% offline local file playback:
+```bash
+./nook_setup/scripts/setup_zirco.sh 192.168.0.188 file:///media/clock/index.html
+```
+
+#### Manual Setup
+1. Sideload Zirco:
+   ```bash
+   adb install nook_setup/apks/org.zirco_18.apk
+   ```
+2. Enable Fullscreen Mode and Hide Title Bars in preferences (`/data/data/org.zirco/shared_prefs/org.zirco_preferences.xml`):
+   ```xml
+   <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+   <map>
+       <boolean name="GeneralFullScreen" value="true" />
+       <boolean name="GeneralHideTitleBars" value="true" />
+       <string name="GeneralHomePage">http://192.168.0.239:9191/</string>
+   </map>
+   ```
+3. Launch Zirco:
+   ```bash
+   adb shell am start -n org.zirco/.ui.activities.MainActivity -d "http://192.168.0.239:9191/"
+   ```
 
 ---
 
