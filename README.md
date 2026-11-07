@@ -3,8 +3,8 @@
 Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6.0" E-Ink Pearl display) into a wall-mounted digital clock modeled after the iconic **Pebble Smartwatch** running the classic **91Dub** watchface (originally created by `orviwan`).
 
 <p align="center">
-  <img src="cad/images/body_front_open.png" width="48%" alt="Front View" />
-  <img src="cad/images/body_rear_pocket.png" width="48%" alt="Rear Cavity View" />
+  <img src="cad/images/body_front_open.png" width="48%" alt="3D Printed Pebble Classic Chassis" />
+  <img src="docs/images/nook_91dub_live.jpg" width="48%" alt="Authentic 91Dub Running on Nook Simple Touch" />
 </p>
 
 ---
@@ -15,8 +15,9 @@ Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6
 * **Zero Device Disassembly:** Drop-in rear cavity ($128.5 \times 167.0 \times 38.0\text{ mm}$) securely holds the unmodified Nook Simple Touch with a $10.2\text{ mm}$ retaining bezel and bottom micro-USB power channel.
 * **Authentic 91Dub Watchface:** Pixel-perfect recreation derived directly from the original Pebble C source code and 1-bit bitmap assets by the original author (`orviwan`).
 * **Integer Scaled for E-Ink Pearl:** Pebble's native $144 \times 168\text{ px}$ canvas is integer-scaled $4\times$ ($576 \times 672\text{ px}$), centering into the Nook's $600 \times 800$ Pearl E-Ink display with 0 subpixel blur.
-* **100% Offline Single-File Dashboard:** `dashboard/index.html` embeds all 72 authentic bitmaps as base64 data URIs. No Wi-Fi or server required—runs completely offline from `file:///sdcard/clock/index.html`.
-* **Engineered for Android 2.1 (Eclair):** Written in strict ES3/ES5 JavaScript for seamless compatibility with legacy Android 2.1 WebKit and Opera Mini.
+* **100% Offline Single-File Dashboard:** `dashboard/index.html` embeds all 72 authentic bitmaps as base64 data URIs. No Wi-Fi or server required—runs completely offline from `file:///media/clock/index.html`.
+* **Engineered for Android 2.1 (Eclair):** Written in strict ES3/ES5 JavaScript for seamless compatibility with legacy Android 2.1 WebKit and Zirco Browser.
+* **Ambient Day Countdown Battery:** The battery bar and percentage dynamically track the remaining duration of the day (00:00 = 100%, 12:00 = 50%, 23:59 = 0%).
 * **E-Ink Pearl Optimizations:**
   * **Minute-aligned ticking:** Wakes up on exact `:00` seconds in standard mode to eliminate CPU wakeups.
   * **Anti-ghosting waveform reset:** Built-in high-contrast invert cycle every 30 minutes (or on tap) to wipe residual E-Ink particle shadows.
@@ -29,9 +30,12 @@ Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6
 ```text
 Bug91Dub/
 ├── README.md                           # Master project guide
+├── AGENTS.md                           # AI agent operational runbook & constraints
 ├── LICENSE                             # Dual license (MIT for code, CC BY-NC-SA 4.0 for CAD)
 ├── docs/
-│   └── CONVERTING_WATCHFACES.md        # Complete guide to converting other Pebble watchfaces
+│   ├── CONVERTING_WATCHFACES.md        # Complete guide to converting other Pebble watchfaces
+│   └── images/
+│       └── nook_91dub_live.jpg         # Real-life photo of clock running on Nook Simple Touch
 ├── tools/
 │   └── extract_pbw.py                  # Utility to unpack .pbw files & convert bitmaps to base64
 ├── dashboard/                          # 91Dub E-Ink Clock Web Dashboard
@@ -57,9 +61,12 @@ Bug91Dub/
 │       └── pebble_clock_body_PRINT_READY.3mf        # Bambu Studio / OrcaSlicer project (0.4mm nozzle)
 ├── nook_setup/                         # Nook Simple Touch configuration & scripts
 │   ├── GUIDE.md                        # Step-by-step rooting & setup guide
+│   ├── apks/
+│   │   └── org.zirco_18.apk            # Tested Android 2.1 fullscreen browser APK
 │   └── scripts/
-│       ├── push_clock.sh               # One-click ADB transfer of clock to /sdcard/clock/
-│       └── setup_adb.sh                # Display timeout and stay-awake configurator
+│       ├── push_clock.sh               # One-click ADB transfer of clock to device
+│       ├── setup_adb.sh                # Display timeout and stay-awake configurator
+│       └── setup_zirco.sh              # One-command browser installer & fullscreen launcher
 └── server/                             # Optional local server hosting
     ├── server.py                       # Standalone Python HTTP server with e-ink no-cache headers
     └── docker-compose.yml              # Turnkey Docker Compose configuration for homelabs
@@ -101,26 +108,27 @@ Check out the **[Watchface Conversion Guide](docs/CONVERTING_WATCHFACES.md)** fo
 ### Option A: Zero-Network Offline Mode (Recommended)
 Because `dashboard/index.html` has zero external dependencies, you can run it completely disconnected from the network:
 
-1. Connect your rooted Nook via USB or ADB over Wi-Fi.
-2. Push the standalone file:
+1. Connect your rooted Nook via USB or ADB over Wi-Fi (`adb connect <NOOK_IP>:5555`).
+2. Sideload Zirco Browser and launch the offline clock in full screen:
    ```bash
-   ./nook_setup/scripts/push_clock.sh
+   ./nook_setup/scripts/setup_zirco.sh <NOOK_IP> file:///media/clock/index.html
    ```
-3. Open `file:///sdcard/clock/index.html` in Opera Mini or the stock browser.
-4. Set the browser to **Full Screen** mode.
 
-### Option B: Local Network Server
-Run the lightweight server on a Raspberry Pi or homelab server:
+### Option B: Local Network Server (Docker on NAS or Raspberry Pi)
+Run the lightweight server on a Raspberry Pi or homelab server (e.g. `pro-nas`):
 
 ```bash
-# Using Python (zero dependencies)
-python3 server/server.py 8080
-
-# Or using Docker Compose
+# Using Docker Compose (nginx:alpine, < 3MB RAM)
 docker compose -f server/docker-compose.yml up -d
+
+# Or using standalone Python
+python3 server/server.py 8080
 ```
 
-Navigate to `http://<SERVER_IP>:8080/` in the Nook's browser.
+Point Zirco to your server container:
+```bash
+./nook_setup/scripts/setup_zirco.sh <NOOK_IP> http://<SERVER_IP>:9191/
+```
 
 ---
 
