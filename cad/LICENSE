@@ -1,0 +1,66 @@
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
+================================================================================
+Giant Pebble Classic Wall Clock — 3D CAD Enclosure & Models
+================================================================================
+
+Copyright (c) 2026 Jon Barlow (orviwan)
+Derived from official CAD drawings released by Pebble Technology Corporation.
+
+--------------------------------------------------------------------------------
+1. Grant of License
+--------------------------------------------------------------------------------
+The 3D CAD models, OpenSCAD source files, Blender master files, and print-ready
+STLs/3MF files in this directory are licensed under the Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0).
+
+You are free to:
+* Share — copy and redistribute the material in any medium or format.
+* Adapt — remix, transform, and build upon the material.
+
+Under the following terms:
+* Attribution — You must give appropriate credit to Pebble Technology
+  Corporation for the underlying watch body geometry and to Jon Barlow for
+  the giant wall clock modifications, provide a link to the license, and
+  indicate if changes were made.
+* NonCommercial — You may not use the material for commercial purposes
+  (e.g., selling 3D printed enclosures or derivative kits for profit).
+* ShareAlike — If you remix, transform, or build upon the material, you must
+  distribute your contributions under the same license as the original.
+
+Full license text: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+--------------------------------------------------------------------------------
+2. Upstream Attribution & Notice
+--------------------------------------------------------------------------------
+The 3D watch body geometry in this project is derived from the official 3D CAD
+drawings released by Pebble Technology Corporation in the official pebble-3d
+repository:
+
+* Upstream Repository: https://github.com/pebble/pebble-3d
+* Original File: PebbleSolid-20130102.STL / PebbleSolid-20130102.STEP
+* Original Copyright: (c) 2013, 2014, 2015, 2016 Pebble Technology Corporation.
+  All Rights Reserved.
+* Original Statement:
+  "Here's the moment you've all been waiting for: the release of Pebble's
+  3D drawings. We're looking forward to seeing some awesome designs on
+  thingiverse! Where possible, PDF, STL, and STP files are included.
+  FILES ARE FOR REFERENCE ONLY. SUBJECT TO CHANGE WITHOUT NOTICE.
+  All Rights Reserved. 2013, 2014, 2015, 2016 Pebble Technology Corporation."
+
+Wall clock modifications by Jon Barlow:
+- Scaled 4.314x to accommodate standard 6.0" E-Ink Pearl displays.
+- Cut rectangular screen aperture matching the 600x800 active E-Ink matrix.
+- Added rear drop-in pocket and retention lip for Barnes & Noble Nook Simple Touch.
+- Added bottom micro-USB power cable routing channels.
+- Added wall-mount keyhole slots and desktop kickstand sockets.
+
+--------------------------------------------------------------------------------
+3. Trademarks
+--------------------------------------------------------------------------------
+Pebble, Pebble Classic, and Pebble Time are trademarks formerly of Pebble
+Technology Corporation, subsequently acquired by Fitbit LLC / Google LLC.
+Nook and Nook Simple Touch are trademarks of Barnes & Noble, Inc.
+This project is an independent open-source fan preservation effort and is not
+affiliated with or endorsed by Pebble Technology Corporation, Fitbit LLC,
+Google LLC, or Barnes & Noble, Inc.

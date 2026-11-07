@@ -31,7 +31,7 @@ Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6
 Bug91Dub/
 ├── README.md                           # Master project guide
 ├── AGENTS.md                           # AI agent operational runbook & constraints
-├── LICENSE                             # Dual license (MIT for code, CC BY-NC-SA 4.0 for CAD)
+├── LICENSE                             # MIT License (software, web clock & tools)
 ├── docs/
 │   ├── CONVERTING_WATCHFACES.md        # Complete guide to converting other Pebble watchfaces
 │   └── images/
@@ -50,6 +50,7 @@ Bug91Dub/
 │       ├── embedded_assets.js          # Base64 data URI map of all 72 original assets
 │       └── images/                     # Authentic 144x168 Pebble 91Dub PNG images
 ├── cad/                                # 3D Print Enclosure & Master CAD
+│   ├── LICENSE                         # CC BY-NC-SA 4.0 License & Pebble upstream attribution
 │   ├── PRINTING_GUIDE.md               # Slicing parameters, bed orientation & assembly guide
 │   ├── giant_pebble_wall_clock.blend   # Master Blender 5.2 CAD scene with textures & hierarchy
 │   ├── images/                         # Visual inspection & cross-section renders
@@ -136,5 +137,5 @@ Point Zirco to your server container:
 ## Licensing & Attribution
 
 * **Software Code (`dashboard/`, `server/`, `tools/`, `nook_setup/`):** Licensed under the **[MIT License](LICENSE)**. © 2026 Jon Barlow (`orviwan`) and contributors. Original 91Dub watchface design and assets copyright Jon Barlow.
-* **3D CAD Models & Enclosure (`cad/`):** Licensed under **[CC BY-NC-SA 4.0](LICENSE)**. Derived from the official 3D CAD drawings released by **Pebble Technology Corporation** in the [`pebble/pebble-3d`](https://github.com/pebble/pebble-3d) repository (© 2013–2016 Pebble Technology Corporation, All Rights Reserved).
+* **3D CAD Models & Enclosure (`cad/`):** Licensed under **[CC BY-NC-SA 4.0](cad/LICENSE)**. Derived from the official 3D CAD drawings released by **Pebble Technology Corporation** in the [`pebble/pebble-3d`](https://github.com/pebble/pebble-3d) repository (© 2013–2016 Pebble Technology Corporation, All Rights Reserved).
 * **Trademarks:** Pebble, Pebble Classic, and Pebble Time are trademarks formerly of Pebble Technology Corporation, subsequently acquired by Fitbit LLC / Google LLC. This project is an independent open-source hardware homage and fan preservation project.
