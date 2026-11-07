@@ -23,8 +23,11 @@ nook_d = 12.0;        // Nook thickness (mm)
 nook_clr = 1.2;       // Fit clearance (0.5 to 1.5mm recommended)
 
 /* [E-Ink Display Active Window] */
-screen_w = 91.5;      // Screen cutout width (6.0" Pearl: 90.6mm active + margin)
-screen_h = 123.5;     // Screen cutout height (122.4mm active + margin)
+// E-Ink Pearl ED060SC7 active matrix is 90.6mm x 122.4mm (600x800 px).
+// Cutout is sized to 90.2mm x 121.8mm so the 3D-printed bezel slightly overlaps
+// into the clock's black canvas border, masking the Nook's unaddressable glass margin.
+screen_w = 90.2;      // Screen cutout width (covers unaddressed side margins)
+screen_h = 121.8;     // Screen cutout height (covers unaddressed top margin)
 screen_offset_y = 0.5;// Slight vertical offset alignment
 
 /* [Pebble Case Styling] */

@@ -45,6 +45,13 @@ This document provides operational context, technical constraints, network topol
   * `?battery=day` — Explicitly enables day countdown mode (default).
   * `?invert=1` — Inverted high-contrast color scheme ("Junkie Mode").
 
+### C. Physical Screen Border vs. Active Matrix
+* **Active Matrix**: $600 \times 800$ pixels ($90.6 \times 122.4\text{ mm}$ at 167 ppi).
+* **The "3-Sided Light Border" Phenomenon**: On a bare Nook displaying a black background, a $\sim 0.5\text{--}1.0\text{ mm}$ off-white margin is visible at the top, left, and right between the active pixels and the plastic bezel. This is unaddressable E-Ink glass outside the active pixel grid:
+  * Barnes & Noble molded the Nook casing for e-reading (white page background), where the light inactive margin blended seamlessly into white book margins.
+  * The bottom bezel sits further forward over the ribbon connector, concealing the bottom edge.
+  * **Resolution**: The 3D-printed Pebble enclosure (`cad/pebble_wall_clock.scad`) has its front aperture sized to $90.2 \times 121.8\text{ mm}$, deliberately overlapping $\sim 0.3\text{ mm}$ into the clock's black canvas padding ($12\text{px}$ / $1.8\text{ mm}$ margin) to physically mask this light border completely. Alternatively, `?invert=1` (white background) makes the border disappear on a bare Nook.
+
 ---
 
 ## 4. Agent Runbook & Common Operations
