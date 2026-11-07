@@ -3,7 +3,7 @@
 Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6.0" E-Ink Pearl display) into a wall-mounted digital clock modeled after the iconic **Pebble Smartwatch** running the classic **91Dub** watchface (originally created by `orviwan`).
 
 <p align="center">
-  <img src="cad/images/body_front_open.png" width="48%" alt="3D Printed Pebble Classic Chassis" />
+  <img src="docs/images/pebble_wall_clock_assembled.jpg" width="48%" alt="Giant 3D-Printed Pebble Wall Clock vs Original Pebble Smartwatch" />
   <img src="docs/images/nook_91dub_live.jpg" width="48%" alt="Authentic 91Dub Running on Nook Simple Touch" />
 </p>
 
@@ -35,6 +35,7 @@ Bug91Dub/
 ├── docs/
 │   ├── CONVERTING_WATCHFACES.md        # Complete guide to converting other Pebble watchfaces
 │   └── images/
+│       ├── pebble_wall_clock_assembled.jpg # Real-life photo of assembled clock with original Pebble
 │       └── nook_91dub_live.jpg         # Real-life photo of clock running on Nook Simple Touch
 ├── tools/
 │   └── extract_pbw.py                  # Utility to unpack .pbw files & convert bitmaps to base64
