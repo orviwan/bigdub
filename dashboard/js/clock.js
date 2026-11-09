@@ -16,7 +16,8 @@
     ghostClearMinutes: 30, // Periodic anti-ghosting waveform refresh
     batteryMode: 'day_countdown', // 'day_countdown' (00:00=100%, 12:00=50%), 'manual', or 'hardware'
     batteryPercent: 100,
-    isCharging: false
+    isCharging: false,
+    offsetY: -14 // Vertical offset in px (shifts watchface up inside 3D-printed bezel)
   };
 
   // Asset path resolver (overridden if ASSETS_MAP is provided)
@@ -47,6 +48,7 @@
           var parsed = JSON.parse(saved);
           for (var key in parsed) {
             if (parsed.hasOwnProperty(key)) {
+              if (key === 'offsetY' && parsed[key] === -28) continue;
               settings[key] = parsed[key];
             }
           }
@@ -84,6 +86,11 @@
               settings.is24h = (v === '1' || v === 'true');
             } else if (k === 'seconds') {
               settings.showSeconds = (v === '1' || v === 'true');
+            } else if (k === 'offsetY' || k === 'offsety') {
+              var oy = parseInt(v, 10);
+              if (!isNaN(oy)) {
+                settings.offsetY = oy;
+              }
             }
           }
         }
@@ -174,6 +181,8 @@
       el.bigGroup.style.display = 'block';
       el.medGroup.style.display = 'none';
     }
+
+    el.screen.style.top = settings.offsetY + 'px';
   }
 
   // Update battery graphic
@@ -457,6 +466,30 @@
     if (clearBtn) {
       clearBtn.onclick = function () {
         triggerEinkClear();
+      };
+    }
+
+    var upBtn = document.getElementById('btn-offset-up');
+    var downBtn = document.getElementById('btn-offset-down');
+    var offsetLabel = document.getElementById('offset-y-val');
+    function updateOffsetLabel() {
+      if (offsetLabel) {
+        offsetLabel.innerHTML = settings.offsetY + 'px';
+      }
+    }
+    updateOffsetLabel();
+    if (upBtn) {
+      upBtn.onclick = function () {
+        settings.offsetY -= 4;
+        el.screen.style.top = settings.offsetY + 'px';
+        updateOffsetLabel();
+      };
+    }
+    if (downBtn) {
+      downBtn.onclick = function () {
+        settings.offsetY += 4;
+        el.screen.style.top = settings.offsetY + 'px';
+        updateOffsetLabel();
       };
     }
   }

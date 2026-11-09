@@ -41,9 +41,10 @@ html, body {
 /* 4x integer scaled Pebble canvas (144x168 -> 576x672) */
 #pebble-screen {
   position: relative;
+  top: -14px;
   width: 576px;
   height: 672px;
-  background-color: #ffffff;
+  background-color: #000000;
   overflow: hidden;
   /* Ensure pixelated crisp edges on e-ink and high-res screens */
   image-rendering: -webkit-optimize-contrast;
@@ -90,7 +91,7 @@ html, body {
 #battery-bar {
   position: absolute;
   top: 180px;
-  left: 452px;
+  left: 360px;
   width: 44px;
   height: 20px;
   background-color: #000000;
@@ -100,7 +101,7 @@ html, body {
 #battery-icon-layer {
   position: absolute;
   top: 172px;
-  left: 444px;
+  left: 352px;
   width: 64px;
   height: 36px;
   z-index: 3;
@@ -109,7 +110,7 @@ html, body {
 #battery-percent-tens {
   position: absolute;
   top: 172px;
-  left: 356px;
+  left: 432px;
   width: 20px;
   height: 32px;
 }
@@ -117,7 +118,7 @@ html, body {
 #battery-percent-units {
   position: absolute;
   top: 172px;
-  left: 380px;
+  left: 456px;
   width: 20px;
   height: 32px;
 }
@@ -125,7 +126,7 @@ html, body {
 #battery-percent-symbol {
   position: absolute;
   top: 172px;
-  left: 404px;
+  left: 480px;
   width: 28px;
   height: 28px;
 }
