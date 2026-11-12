@@ -51,12 +51,12 @@ By default, Android 2.1 boots into the Nook lockscreen or a generic launcher (`R
 To make the Nook boot **directly into the fullscreen 91Dub watchface** and maximize untethered battery life, we include a purpose-built `57 KB` native Android 2.1 (API Level 7, Dalvik DEX `035`) Home Launcher & Clock APK (`nook_setup/apks/com.bigdub.clock.apk`, source in `nook_setup/clock_apk/`).
 
 ### Key Power & Boot Features
-* **True `CATEGORY_HOME` Replacement + `BOOT_COMPLETED` Receiver**: Replaces the generic launcher screen on boot and dismisses the slide-to-unlock keyguard (`FLAG_DISMISS_KEYGUARD | FLAG_SHOW_WHEN_LOCKED`).
-* **Real Hardware Battery Gauge**: Reads the Nook's internal fuel gauge (`Intent.ACTION_BATTERY_CHANGED` / `max17042`) once per minute with zero background polling, displaying real battery percentage on the 91Dub battery bar (switchable to Day Countdown in the top touch menu).
+* **Automatic Default `CATEGORY_HOME` Binding + Keyguard Dismissal**: Uses `SET_PREFERRED_APPLICATIONS` on Android 2.1 to programmatically register itself as the default `HOME` launcher on first launch (no manual `"Use by default"` chooser dialog needed), and dismisses the cold-boot slide-to-unlock keyguard (`FLAG_DISMISS_KEYGUARD | FLAG_SHOW_WHEN_LOCKED` + `KeyguardLock` wakeup retry).
+* **Real Hardware Battery Gauge**: Reads the Nook's internal fuel gauge (`Intent.ACTION_BATTERY_CHANGED` / `bq27510` / `max17042`) once per minute with zero background polling, displaying real battery percentage and charging bolt (`icon_battery_charge.png`) on the 91Dub battery bar (switchable to Day Countdown in the top touch menu).
 * **Hardware `AlarmManager.RTC_WAKEUP` Minute Ticks**: Schedules exact `:00` minute hardware RTC wakeups with zero 1-second JS polling loops and zero WebKit memory overhead (`~1.3 MB` RGB565 sprite cache vs. `35+ MB` browser footprint).
 * **Partial Screen Redraws (`invalidate(dirtyRect)`)**: Diffs every digit and status slot on each minute tick. On 53 out of every 60 minutes, **only the single `104×164` `minUnits` rectangle (`3.5%` of the screen)** is invalidated, letting `SurfaceFlinger` and the `omap3epfb` driver execute a low-energy regional E-Ink update instead of energizing the `±15V` charge pump across the entire panel.
-* **Wi-Fi Off & CPU Idle Clamping**: Powers down the `tiwlan0` Wi-Fi radio and sets the TI OMAP3621 CPU governor to `ondemand` (`300 MHz` idle floor).
-* **Built-In Wireless Maintenance Toggle**: Tap the top 80px of the screen any time to open the monochrome Settings drawer and toggle **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`) or open `ReLaunch` / Android Settings, then tap **`Wi-Fi OFF`** to return to battery mode.
+* **Wi-Fi Off, Silent Root & CPU Clamping**: Powers down the `tiwlan0` Wi-Fi radio via `WifiManager`, pre-authorizes silent `Superuser` access (suppressing E-Ink toast popups), and clamps the TI OMAP3621 CPU frequency between `300 MHz` (idle floor) and `600 MHz`.
+* **Built-In Wireless Maintenance Toggle**: Tap the top 80px of the screen any time to open the monochrome Settings drawer and toggle **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`) or open `ADW.Launcher` / `ReLaunch` / Android Settings, then tap **`Wi-Fi OFF`** to return to battery mode.
 
 ### One-Command Installation
 > [!IMPORTANT]
@@ -66,17 +66,15 @@ To make the Nook boot **directly into the fullscreen 91Dub watchface** and maxim
 # Over USB:
 ./nook_setup/scripts/setup_native_clock.sh
 
-# Or over Wireless ADB (installs, launches, and disables Wi-Fi at the end):
+# Or over Wireless ADB (installs, auto-binds HOME, launches, and disables Wi-Fi at the end):
 ./nook_setup/scripts/setup_native_clock.sh 192.168.0.188
 
 # Keep Wi-Fi enabled during testing:
 ./nook_setup/scripts/setup_native_clock.sh 192.168.0.188 --keep-wifi
 ```
 
-### Setting as Default Home Screen (One-Time Step)
-1. Press the physical **`n`** (Home) button on the front bezel of the Nook.
-2. Check **"Use by default for this action"** (Always) and tap **91Dub Clock**.
-3. Reboot (`adb reboot` or power-cycle) to verify — the Nook will boot straight into the 91Dub watchface.
+### Verifying Hands-Free Cold Boot
+Reboot (`adb reboot` or hold the rear power button to power-cycle) — `com.bigdub.clock` automatically starts as the preferred `HOME` screen and dismisses the slide-to-unlock screen with zero touches required.
 
 ### Rebuilding the Native APK from Source
 ```bash

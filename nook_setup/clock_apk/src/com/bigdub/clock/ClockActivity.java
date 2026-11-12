@@ -8,9 +8,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -23,6 +26,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.List;
 
 /**
  * Fullscreen E-Ink 91Dub Home Launcher & Appliance Activity for Android 2.1 (API Level 7).
@@ -44,6 +49,7 @@ public class ClockActivity extends Activity implements ClockView.TouchZoneListen
     private ClockView clockView;
     private LinearLayout settingsDrawer;
     private KeyguardManager.KeyguardLock keyguardLock;
+    private final Handler uiHandler = new Handler();
 
     // Persisted preferences
     private boolean prefIs24h = true;
@@ -104,14 +110,8 @@ public class ClockActivity extends Activity implements ClockView.TouchZoneListen
             | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         );
 
-        try {
-            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-            if (km != null) {
-                keyguardLock = km.newKeyguardLock("91DubClockKeyguard");
-                keyguardLock.disableKeyguard();
-            }
-        } catch (Throwable ignored) {
-        }
+        dismissKeyguardReliably();
+        ensureDefaultHomeLauncher();
 
         loadPrefs();
 
@@ -139,13 +139,103 @@ public class ClockActivity extends Activity implements ClockView.TouchZoneListen
 
         activeInstance = this;
 
+        applyPowerModeFromPrefs();
+
+        // Android 2.1 KeyguardViewMediator.handleHide() ignores disableKeyguard() while
+        // mWakeAndHandOff is held during cold-boot wakeup; re-assert after wakeup settles.
+        uiHandler.postDelayed(new Runnable() {
+            public void run() {
+                dismissKeyguardReliably();
+            }
+        }, 2500);
+        uiHandler.postDelayed(new Runnable() {
+            public void run() {
+                dismissKeyguardReliably();
+            }
+        }, 6000);
+
+        TickReceiver.scheduleNextMinute(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        dismissKeyguardReliably();
+        loadPrefs();
+        if (clockView != null) {
+            clockView.applySettings(
+                prefIs24h, prefRealBattery, prefInvert,
+                prefHideBranding, prefOffsetY, prefGhostMinutes);
+            clockView.refreshClock(false);
+        }
+        applyPowerModeFromPrefs();
+    }
+
+    private void applyPowerModeFromPrefs() {
         if (prefWifiMaint) {
             PowerOptimizer.enableWifiMaintenanceMode(this);
         } else {
             PowerOptimizer.enableBatterySaverMode(this);
         }
+    }
 
-        TickReceiver.scheduleNextMinute(this);
+    private void dismissKeyguardReliably() {
+        try {
+            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            if (km == null) return;
+            if (keyguardLock == null) {
+                keyguardLock = km.newKeyguardLock("91DubClockKeyguard");
+                keyguardLock.disableKeyguard();
+            } else if (km.inKeyguardRestrictedInputMode()) {
+                keyguardLock.reenableKeyguard();
+                keyguardLock.disableKeyguard();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private void ensureDefaultHomeLauncher() {
+        try {
+            PackageManager pm = getPackageManager();
+            Intent homeIntent = new Intent(Intent.ACTION_MAIN);
+            homeIntent.addCategory(Intent.CATEGORY_HOME);
+            homeIntent.addCategory(Intent.CATEGORY_DEFAULT);
+
+            ResolveInfo current = pm.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (current != null && current.activityInfo != null
+                    && getPackageName().equals(current.activityInfo.packageName)) {
+                return;
+            }
+
+            List<ResolveInfo> list = pm.queryIntentActivities(
+                homeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (list == null || list.size() == 0) return;
+
+            ComponentName[] set = new ComponentName[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                ResolveInfo ri = list.get(i);
+                String pkg = ri.activityInfo.packageName;
+                set[i] = new ComponentName(pkg, ri.activityInfo.name);
+                if (!getPackageName().equals(pkg)) {
+                    try {
+                        pm.clearPackagePreferredActivities(pkg);
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+
+            IntentFilter filter = new IntentFilter(Intent.ACTION_MAIN);
+            filter.addCategory(Intent.CATEGORY_HOME);
+            filter.addCategory(Intent.CATEGORY_DEFAULT);
+            pm.addPreferredActivity(
+                filter,
+                IntentFilter.MATCH_CATEGORY_EMPTY,
+                set,
+                new ComponentName(this, ClockActivity.class)
+            );
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override
@@ -461,8 +551,10 @@ public class ClockActivity extends Activity implements ClockView.TouchZoneListen
     private void openExternalLauncherOrSettings(boolean preferLauncher) {
         if (preferLauncher) {
             String[][] candidates = new String[][] {
+                { "org.adwfreak.launcher", "org.adw.launcherlib.Launcher" },
                 { "com.harasoft.relaunch", "com.harasoft.relaunch.ReLaunch" },
-                { "com.gacode.relaunchx", "com.gacode.relaunchx.Main" }
+                { "com.gacode.relaunchx", "com.gacode.relaunchx.Main" },
+                { "com.estrongs.android.pop", "com.estrongs.android.pop.view.FileExplorerActivity" }
             };
             for (int i = 0; i < candidates.length; i++) {
                 try {

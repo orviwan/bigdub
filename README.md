@@ -15,7 +15,7 @@ Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6
 * **Zero Device Disassembly:** Drop-in rear cavity ($128.5 \times 167.0 \times 38.0\text{ mm}$) securely holds the unmodified Nook Simple Touch with a $10.2\text{ mm}$ retaining bezel and bottom micro-USB power channel.
 * **Authentic 91Dub Watchface:** Pixel-perfect recreation derived directly from the original Pebble C source code and 1-bit bitmap assets by the original author (`orviwan`).
 * **Integer Scaled for E-Ink Pearl:** Pebble's native $144 \times 168\text{ px}$ canvas is integer-scaled $4\times$ ($576 \times 672\text{ px}$), centering into the Nook's $600 \times 800$ Pearl E-Ink display with 0 subpixel blur.
-* **Native Android 2.1 `HOME` Launcher APK (`com.bigdub.clock`):** A lightweight (`57 KB`) native Android 2.1 (API Level 7, Dalvik DEX `035`) watchface & Home replacement APK that boots straight into the 91Dub clock with zero generic launcher screen, zero WebKit RAM overhead, real Nook fuel-gauge battery percentage, hardware `AlarmManager.RTC_WAKEUP` minute alarms, and Wi-Fi-off CPU power clamping.
+* **Native Android 2.1 `HOME` Launcher APK (`com.bigdub.clock`):** A lightweight (`58 KB`) native Android 2.1 (API Level 7, Dalvik DEX `035`) watchface & Home replacement APK that programmatically binds itself as the default `CATEGORY_HOME` launcher (`SET_PREFERRED_APPLICATIONS`), dismisses the cold-boot swipe-to-unlock keyguard, boots straight into the 91Dub clock with zero generic launcher screen or WebKit RAM overhead, reads the real Nook `bq27510` / `max17042` fuel-gauge battery percentage, schedules hardware `AlarmManager.RTC_WAKEUP` minute alarms, and clamps CPU frequency (`300–600 MHz`) with Wi-Fi powered off.
 * **100% Offline Single-File Web Dashboard:** `dashboard/index.html` also embeds all 72 authentic bitmaps as base64 data URIs for browser or homelab Docker (`nginx:alpine`) deployment.
 * **Real Hardware Battery or Ambient Day Countdown:** The Pebble battery bar and percentage digits read the real Nook fuel gauge (`max17042` / `BatteryManager`) in untethered battery mode, or optionally count down the remaining duration of the day (`00:00` = `100%`, `12:00` = `50%`, `23:59` = `0%`).
 * **E-Ink Pearl & Battery Optimizations:**
@@ -118,7 +118,7 @@ Check out the **[Watchface Conversion Guide](docs/CONVERTING_WATCHFACES.md)** fo
 For untethered battery operation and instant boot-to-watchface startup (bypassing the generic launcher screen and WebKit browser overhead):
 
 1. Connect your rooted Nook via a **data-capable** Micro-USB cable or Wireless ADB (`adb connect <NOOK_IP>:5555`).
-2. Run the automated native installer (installs `com.bigdub.clock.apk`, configures real hardware battery %, clamps idle CPU clocks, launches the watchface, and powers off Wi-Fi):
+2. Run the automated native installer (installs `com.bigdub.clock.apk`, pre-authorizes silent `Superuser` root access, binds `91Dub Clock` as the default `HOME` launcher automatically, configures real hardware battery %, clamps CPU clocks to `300–600 MHz`, launches the watchface, and powers off Wi-Fi):
    ```bash
    # Over USB:
    ./nook_setup/scripts/setup_native_clock.sh
@@ -126,8 +126,8 @@ For untethered battery operation and instant boot-to-watchface startup (bypassin
    # Or over Wireless ADB (automatically turns Wi-Fi OFF at the end):
    ./nook_setup/scripts/setup_native_clock.sh <NOOK_IP>
    ```
-3. **One-time default Home binding:** Press the physical front **`n`** button once, check **"Use by default for this action"**, and select **91Dub Clock**. Every reboot now starts directly on the 91Dub watchface.
-4. **Re-enabling Wi-Fi + Wireless ADB later:** Tap the top 80px of the screen to open Settings and tap **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`), then tap **`Wi-Fi OFF`** when finished.
+3. **Zero manual boot steps:** On first launch, `com.bigdub.clock` automatically registers itself as Android 2.1's preferred `HOME` activity and dismisses the swipe-to-unlock keyguard — every cold reboot goes straight to the 91Dub watchface.
+4. **Re-enabling Wi-Fi + Wireless ADB later:** Tap the top 80px of the screen to open Settings and tap **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`), or tap **`Launcher`** to jump into `ADW.Launcher` / `ReLaunch`, then tap **`Wi-Fi OFF`** when finished.
 
 ### Option B: Zero-Network Offline Web Mode (Zirco Browser)
 Because `dashboard/index.html` has zero external dependencies, you can also run the HTML/JS version offline inside Zirco Browser:

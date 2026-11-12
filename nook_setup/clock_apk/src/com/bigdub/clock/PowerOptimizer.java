@@ -37,8 +37,11 @@ public final class PowerOptimizer {
     };
 
     private static final String[] STATUS_PATHS = new String[] {
+        "/sys/class/power_supply/bq27510-0/status",
         "/sys/class/power_supply/max17042-0/status",
         "/sys/class/power_supply/battery/status",
+        "/sys/class/power_supply/bq27510-usb/online",
+        "/sys/class/power_supply/bq27510-wall/online",
         "/sys/class/power_supply/usb/online",
         "/sys/class/power_supply/ac/online"
     };
@@ -100,8 +103,8 @@ public final class PowerOptimizer {
     }
 
     /**
-     * Applies ultra-low-power offline settings: disables Wi-Fi radio, clamps CPU idle clocks,
-     * and stops background B&N cloud sync processes if rooted.
+     * Applies ultra-low-power offline settings: disables Wi-Fi radio and clamps CPU max frequency
+     * to 600 MHz (stepping down to 300 MHz idle) if rooted.
      */
     public static void enableBatterySaverMode(final Context context) {
         try {
@@ -113,14 +116,14 @@ public final class PowerOptimizer {
         } catch (Throwable ignored) {
         }
 
+        String curMax = readFirstLine("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq");
+        if (curMax != null && "600000".equals(curMax.trim())) {
+            return;
+        }
+
         new Thread(new Runnable() {
             public void run() {
                 runRootCommands(new String[] {
-                    "svc wifi disable 2>/dev/null || true",
-                    // Clamp TI OMAP3621 to conservative/ondemand lowest step (300 MHz) when idle
-                    "if [ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]; then " +
-                        "echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || true; " +
-                    "fi",
                     "if [ -f /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq ]; then " +
                         "echo 300000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2>/dev/null || true; " +
                     "fi",
@@ -134,6 +137,7 @@ public final class PowerOptimizer {
 
     /**
      * Enables Wi-Fi and Wireless ADB (port 5555) on demand for remote maintenance.
+     * Avoids restarting adbd if port 5555 is already active so existing ADB sessions stay live.
      */
     public static void enableWifiMaintenanceMode(final Context context) {
         try {
@@ -148,10 +152,11 @@ public final class PowerOptimizer {
         new Thread(new Runnable() {
             public void run() {
                 runRootCommands(new String[] {
-                    "svc wifi enable 2>/dev/null || true",
-                    "setprop service.adb.tcp.port 5555",
-                    "stop adbd",
-                    "start adbd"
+                    "if [ \"$(getprop service.adb.tcp.port)\" != \"5555\" ]; then " +
+                        "setprop service.adb.tcp.port 5555; " +
+                        "stop adbd; " +
+                        "start adbd; " +
+                    "fi"
                 });
             }
         }).start();
