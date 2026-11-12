@@ -13,7 +13,7 @@
     blinkColon: false, // Default false for e-ink power saving
     invert: false,
     brandingMask: false, // false = show "PEBBLE" logo
-    ghostClearMinutes: 30, // Periodic anti-ghosting waveform refresh
+    ghostClearMinutes: 360, // Periodic anti-ghosting waveform refresh (every 6h for battery life)
     batteryMode: 'day_countdown', // 'day_countdown' (00:00=100%, 12:00=50%), 'manual', or 'hardware'
     batteryPercent: 100,
     isCharging: false,
@@ -58,7 +58,7 @@
       // Ignore localStorage errors in restricted webviews
     }
 
-    // URL parameters (e.g., ?battery=90 or ?battery=day or ?invert=1)
+    // URL parameters (e.g., ?battery=90, ?battery=day, ?battery=hardware, or ?invert=1)
     try {
       if (window.location && window.location.search) {
         var qs = window.location.search.substring(1);
@@ -71,6 +71,8 @@
             if (k === 'battery') {
               if (v === 'day' || v === 'countdown') {
                 settings.batteryMode = 'day_countdown';
+              } else if (v === 'hardware' || v === 'real') {
+                settings.batteryMode = 'hardware';
               } else {
                 var b = parseInt(v, 10);
                 if (!isNaN(b)) {
@@ -152,40 +154,79 @@
 
   var dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
+  // Dirty-checking DOM caches so WebKit/EPD only invalidates changed digit rectangles
+  var domSrcCache = {};
+  var domDisplayCache = {};
+  var domVisCache = {};
+  var domWidthCache = {};
+
+  function setSprite(node, assetName) {
+    if (!node) return;
+    var key = node.id;
+    if (domSrcCache[key] !== assetName) {
+      node.src = getAsset(assetName);
+      domSrcCache[key] = assetName;
+    }
+  }
+
+  function setDisplay(node, val) {
+    if (!node) return;
+    var key = node.id;
+    if (domDisplayCache[key] !== val) {
+      node.style.display = val;
+      domDisplayCache[key] = val;
+    }
+  }
+
+  function setVisibility(node, val) {
+    if (!node) return;
+    var key = node.id;
+    if (domVisCache[key] !== val) {
+      node.style.visibility = val;
+      domVisCache[key] = val;
+    }
+  }
+
+  function setWidthPx(node, px) {
+    if (!node) return;
+    var key = node.id;
+    if (domWidthCache[key] !== px) {
+      node.style.width = px + 'px';
+      domWidthCache[key] = px;
+    }
+  }
+
   // Apply visual theme & static graphics
   function applyTheme() {
     var bgFile = settings.invert ? 'background-invert.png' : 'background.png';
     var maskFile = settings.invert ? 'branding-mask-invert.png' : 'branding-mask.png';
 
-    el.bg.src = getAsset(bgFile);
-    el.brandingMask.src = getAsset(maskFile);
-    el.brandingMask.style.display = settings.brandingMask ? 'block' : 'none';
+    setSprite(el.bg, bgFile);
+    setSprite(el.brandingMask, maskFile);
+    setDisplay(el.brandingMask, settings.brandingMask ? 'block' : 'none');
 
-    el.meter.src = getAsset('icon_meter.png');
-    el.bluetooth.src = getAsset('icon_bluetooth.png');
-    el.batSymbol.src = getAsset('tiny_percent.png');
+    setSprite(el.meter, 'icon_meter.png');
+    setSprite(el.bluetooth, 'icon_bluetooth.png');
+    setSprite(el.batSymbol, 'tiny_percent.png');
 
-    el.separator.src = getAsset('separator.png');
-    el.medSeparator.src = getAsset('med-separator.png');
+    setSprite(el.separator, 'separator.png');
+    setSprite(el.medSeparator, 'med-separator.png');
 
-    if (settings.invert) {
-      el.batteryBar.style.backgroundColor = '#ffffff';
-    } else {
-      el.batteryBar.style.backgroundColor = '#000000';
-    }
+    // icon_battery.png always has a white interior, so fill bar stays black
+    el.batteryBar.style.backgroundColor = '#000000';
 
     if (settings.showSeconds) {
-      el.bigGroup.style.display = 'none';
-      el.medGroup.style.display = 'block';
+      setDisplay(el.bigGroup, 'none');
+      setDisplay(el.medGroup, 'block');
     } else {
-      el.bigGroup.style.display = 'block';
-      el.medGroup.style.display = 'none';
+      setDisplay(el.bigGroup, 'block');
+      setDisplay(el.medGroup, 'none');
     }
 
     el.screen.style.top = settings.offsetY + 'px';
   }
 
-  // Update battery graphic
+  // Update battery graphic (dirty-checked for partial E-Ink refresh)
   function updateBatteryUI() {
     if (settings.batteryMode === 'day_countdown') {
       settings.batteryPercent = getDayRemainingPercent();
@@ -194,30 +235,30 @@
     var pct = settings.batteryPercent;
     var charging = settings.isCharging;
 
-    el.batteryIcon.src = getAsset(charging ? 'icon_battery_charge.png' : 'icon_battery.png');
+    setSprite(el.batteryIcon, charging ? 'icon_battery_charge.png' : 'icon_battery.png');
 
     // Draw battery fill bar (up to 44px wide at 4x scale)
     var barWidth = Math.round((pct / 100.0) * 44);
     if (barWidth > 44) barWidth = 44;
     if (barWidth < 0) barWidth = 0;
-    el.batteryBar.style.width = barWidth + 'px';
+    setWidthPx(el.batteryBar, barWidth);
 
     if (charging) {
-      el.batteryBar.style.display = 'none'; // Don't cover charging lightning bolt
+      setDisplay(el.batteryBar, 'none'); // Don't cover charging lightning bolt
     } else {
-      el.batteryBar.style.display = barWidth > 0 ? 'block' : 'none';
+      setDisplay(el.batteryBar, barWidth > 0 ? 'block' : 'none');
     }
 
     if (pct >= 100) {
-      el.batTens.style.display = 'none';
-      el.batUnits.style.display = 'none';
-      el.batSymbol.style.display = 'none';
+      setDisplay(el.batTens, 'none');
+      setDisplay(el.batUnits, 'none');
+      setDisplay(el.batSymbol, 'none');
     } else {
-      el.batTens.style.display = 'block';
-      el.batUnits.style.display = 'block';
-      el.batSymbol.style.display = 'block';
-      el.batTens.src = getAsset('tiny_' + Math.floor(pct / 10) + '.png');
-      el.batUnits.src = getAsset('tiny_' + (pct % 10) + '.png');
+      setDisplay(el.batTens, 'block');
+      setDisplay(el.batUnits, 'block');
+      setDisplay(el.batSymbol, 'block');
+      setSprite(el.batTens, 'tiny_' + Math.floor(pct / 10) + '.png');
+      setSprite(el.batUnits, 'tiny_' + (pct % 10) + '.png');
     }
   }
 
@@ -249,7 +290,7 @@
   var lastDay = -1;
   var lastHour = -1;
 
-  // Clock Update Routine
+  // Clock Update Routine (dirty-checked so only changed digits trigger EPD redraws)
   function updateClock() {
     var now = new Date();
     var hours = now.getHours();
@@ -257,12 +298,14 @@
     var seconds = now.getSeconds();
     var dayOfWeek = now.getDay();
     var dateNum = now.getDate();
+    var totalMinutes = hours * 60 + minutes;
+    var minuteChanged = (lastMinute !== -1 && minutes !== lastMinute);
 
     // 1. Update Day and Date if changed
     if (dateNum !== lastDay) {
-      el.dayName.src = getAsset('day_' + dayNames[dayOfWeek] + '.png');
-      el.dateTens.src = getAsset('datenum_' + Math.floor(dateNum / 10) + '.png');
-      el.dateUnits.src = getAsset('datenum_' + (dateNum % 10) + '.png');
+      setSprite(el.dayName, 'day_' + dayNames[dayOfWeek] + '.png');
+      setSprite(el.dateTens, 'datenum_' + Math.floor(dateNum / 10) + '.png');
+      setSprite(el.dateUnits, 'datenum_' + (dateNum % 10) + '.png');
       lastDay = dateNum;
     }
 
@@ -281,17 +324,17 @@
         displayHour = 12;
       }
       if (isPM) {
-        el.timeFormat.src = getAsset('time_format_PM.png');
-        el.timeFormat.style.display = 'block';
+        setSprite(el.timeFormat, 'time_format_PM.png');
+        setDisplay(el.timeFormat, 'block');
       } else {
-        el.timeFormat.style.display = 'none';
+        setDisplay(el.timeFormat, 'none');
       }
     } else {
-      el.timeFormat.src = getAsset('time_format_24H.png');
-      el.timeFormat.style.display = 'block';
+      setSprite(el.timeFormat, 'time_format_24H.png');
+      setDisplay(el.timeFormat, 'block');
     }
 
-    // 3. Render Digits
+    // 3. Render Digits (only mutating DOM nodes whose sprites actually changed)
     var hTens = Math.floor(displayHour / 10);
     var hUnits = displayHour % 10;
     var mTens = Math.floor(minutes / 10);
@@ -302,47 +345,47 @@
     if (settings.showSeconds) {
       // Medium layout
       if (!settings.is24h && hTens === 0) {
-        el.medHourTens.style.display = 'none';
+        setDisplay(el.medHourTens, 'none');
       } else {
-        el.medHourTens.src = getAsset('med-' + hTens + '.png');
-        el.medHourTens.style.display = 'block';
+        setSprite(el.medHourTens, 'med-' + hTens + '.png');
+        setDisplay(el.medHourTens, 'block');
       }
-      el.medHourUnits.src = getAsset('med-' + hUnits + '.png');
-      el.medMinTens.src = getAsset('med-' + mTens + '.png');
-      el.medMinUnits.src = getAsset('med-' + mUnits + '.png');
+      setSprite(el.medHourUnits, 'med-' + hUnits + '.png');
+      setSprite(el.medMinTens, 'med-' + mTens + '.png');
+      setSprite(el.medMinUnits, 'med-' + mUnits + '.png');
 
-      el.secTens.src = getAsset('sm-' + sTens + '.png');
-      el.secUnits.src = getAsset('sm-' + sUnits + '.png');
+      setSprite(el.secTens, 'sm-' + sTens + '.png');
+      setSprite(el.secUnits, 'sm-' + sUnits + '.png');
 
       if (settings.blinkColon) {
-        el.medSeparator.style.visibility = (seconds % 2 === 0) ? 'visible' : 'hidden';
+        setVisibility(el.medSeparator, (seconds % 2 === 0) ? 'visible' : 'hidden');
       } else {
-        el.medSeparator.style.visibility = 'visible';
+        setVisibility(el.medSeparator, 'visible');
       }
     } else {
       // Big bold layout
       if (!settings.is24h && hTens === 0) {
-        el.hourTens.style.display = 'none';
+        setDisplay(el.hourTens, 'none');
       } else {
-        el.hourTens.src = getAsset('num_' + hTens + '.png');
-        el.hourTens.style.display = 'block';
+        setSprite(el.hourTens, 'num_' + hTens + '.png');
+        setDisplay(el.hourTens, 'block');
       }
-      el.hourUnits.src = getAsset('num_' + hUnits + '.png');
-      el.minTens.src = getAsset('num_' + mTens + '.png');
-      el.minUnits.src = getAsset('num_' + mUnits + '.png');
+      setSprite(el.hourUnits, 'num_' + hUnits + '.png');
+      setSprite(el.minTens, 'num_' + mTens + '.png');
+      setSprite(el.minUnits, 'num_' + mUnits + '.png');
 
       if (settings.blinkColon) {
-        el.separator.style.visibility = (seconds % 2 === 0) ? 'visible' : 'hidden';
+        setVisibility(el.separator, (seconds % 2 === 0) ? 'visible' : 'hidden');
       } else {
-        el.separator.style.visibility = 'visible';
+        setVisibility(el.separator, 'visible');
       }
     }
 
     lastMinute = minutes;
     lastHour = hours;
 
-    // Periodic Anti-Ghosting E-Ink Refresh Check
-    if (settings.ghostClearMinutes > 0 && minutes % settings.ghostClearMinutes === 0 && seconds === 0) {
+    // Periodic Anti-Ghosting E-Ink Refresh Check (on boundary transitions only)
+    if (minuteChanged && settings.ghostClearMinutes > 0 && totalMinutes % settings.ghostClearMinutes === 0) {
       triggerEinkClear();
     }
   }

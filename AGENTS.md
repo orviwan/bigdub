@@ -8,10 +8,10 @@ This document provides operational context, technical constraints, network topol
 
 * **Concept**: A large wall-mounted replica of the original **Pebble Classic (OG)** smartwatch running the iconic **91Dub** watchface on an authentic 6-inch E-Ink display.
 * **Display Hardware**: Barnes & Noble Nook Simple Touch (model `BNRV300`), 6" E-Ink Pearl ($800 \times 600$, 167 ppi, 16 levels of grayscale, 1-bit high-contrast rendering).
-* **Clock Engine**: Pure ES3/ES5 JavaScript rendering an exact $4\times$ integer-scaled ($576 \times 672$) replica of the 91Dub Pebble watchface ($144 \times 168$).
-* **Dual Deployment Modes**:
-  1. **Homelab Docker Container (Primary)**: Hosted on `pro-nas` (`192.168.0.239:9191`) via `nginx:alpine` (< 3 MB RAM footprint).
-  2. **100% Offline Local Storage**: Self-contained `index.html` stored on the Nook's internal eMMC user storage at `file:///media/clock/index.html`.
+* **Clock Engines & Deployment Modes**:
+  1. **Native Android 2.1 `HOME` Launcher APK (`com.bigdub.clock`, Primary Untethered / Battery Mode)**: `57 KB` native API Level 7 (`DEX 035`, `SHA1withRSA` v1 JAR-signed) APK (`nook_setup/apks/com.bigdub.clock.apk`, source in `nook_setup/clock_apk/`). Registers as `CATEGORY_HOME` + `BOOT_COMPLETED` so the Nook boots directly into the 91Dub watchface with zero generic launcher screen, reads real hardware fuel-gauge battery %, ticks on `:00` minute boundaries via `AlarmManager.RTC_WAKEUP`, invalidates only changed `104×164` digit rectangles (`ClockView.invalidate(Rect)`), and powers off Wi-Fi (`tiwlan0`) while clamping CPU idle frequency (`300 MHz`).
+  2. **Homelab Docker Container (Web Mode)**: Pure ES3/ES5 JavaScript (`dashboard/index.html`) hosted on `pro-nas` (`192.168.0.239:9191`) via `nginx:alpine` (< 3 MB RAM footprint).
+  3. **100% Offline Local HTML Storage**: Self-contained `index.html` stored on the Nook's internal storage at `file:///media/clock/index.html` or `file:///sdcard/clock/index.html` via Zirco Browser.
 
 ---
 
@@ -34,16 +34,19 @@ This document provides operational context, technical constraints, network topol
   * **Opera Mini (`com.opera.mini.android`) must NOT be used.** Opera Mini routes traffic through external cloud servers in Norway, causing `"file: said unknown protocol"` on local files and `"Server timed out"` on private LAN IPs (`192.168.x.x`). Additionally, Opera Mini only renders static server-side snapshots and disables client-side `setInterval()` execution.
   * **Use Zirco Browser (`org.zirco`)**: A local WebKit engine that runs client-side JavaScript timers and supports true fullscreen mode. The tested APK is committed at `nook_setup/apks/org.zirco_18.apk`.
 
-### B. Battery Gauge — Real-Time Day Countdown
-* Instead of showing a static or disconnected battery percentage, the clock dynamically counts down the **remaining duration of the day**:
+### B. Battery Gauge — Real Hardware Battery & Day Countdown
+* **Native APK (`com.bigdub.clock`) Default**: Reads the **real Nook hardware battery percentage** (`Intent.ACTION_BATTERY_CHANGED` / `max17042` fuel gauge) once per minute with zero background polling, showing `icon_battery_charge.png` when charging. Can be switched to **Day Countdown** in the top touch Settings drawer.
+* **Web Dashboard Default (`day_countdown`)**: Dynamically counts down the **remaining duration of the day**:
   * **00:00 (Midnight)**: 100% remaining (solid 44px filled bar, percentage digits hidden per Pebble hardware spec).
   * **12:00 (Noon)**: 50% remaining (22px half-filled bar, `50%` digits shown).
   * **23:59**: 0% / 1% remaining.
-* **Z-Index Layering Rule**: `#battery-bar` **MUST have `z-index: 4`**. The battery outline image (`#battery-icon-layer`) has an opaque white interior at `z-index: 3`. If the bar is at `z-index: 2`, it will be completely hidden behind the white icon background.
-* **URL Parameter Overrides**:
+* **Partial Screen Redraw Rule**: Both `ClockView.java` (`invalidate(Rect)`) and `clock.js` (`domSrcCache` dirty-checking) MUST only invalidate changed sprites so `SurfaceFlinger` + `omap3epfb` run regional EPD updates (`104×164` `minUnits` on 53/60 minutes) rather than full-panel `±15V` charge-pump cycles.
+* **Z-Index / Draw Order Rule**: `#battery-bar` **MUST be drawn ON TOP OF `#battery-icon-layer`** (`z-index: 4` > `z-index: 3`). The battery outline image (`icon_battery.png`) has an opaque white interior; drawing the bar underneath hides it completely.
+* **Web URL Parameter Overrides**:
+  * `?battery=hardware` — Uses browser Battery API if available.
   * `?battery=90` — Manually forces a fixed 90% battery reading.
   * `?battery=day` — Explicitly enables day countdown mode (default).
-  * `?invert=1` — Inverted high-contrast color scheme ("Junkie Mode").
+  * `?invert=1` — Inverted outer bezel color scheme.
 
 ### C. Physical Screen Border vs. Active Matrix
 * **Active Matrix**: $600 \times 800$ pixels ($90.6 \times 122.4\text{ mm}$ at 167 ppi).
@@ -61,7 +64,17 @@ This document provides operational context, technical constraints, network topol
 adb connect 192.168.0.188:5555
 ```
 
-### Launching / Relaunching the Clock on Nook
+### Building & Deploying Native Auto-Boot Battery Clock (`com.bigdub.clock`)
+> Note: In battery-saver mode, Wi-Fi on the Nook is turned OFF. Tap the top 80px of the Nook screen and tap **`Wi-Fi+ADB`** (or connect a **data-capable** Micro-USB cable) before running ADB commands.
+```bash
+# 1. Rebuild Android 2.1 APK (API 7, DEX 035, v1 SHA1withRSA signature)
+./nook_setup/clock_apk/build.sh
+
+# 2. Install, configure real battery + CPU power clamp, launch, and turn Wi-Fi OFF
+./nook_setup/scripts/setup_native_clock.sh 192.168.0.188
+```
+
+### Launching / Relaunching Browser Mode on Nook (Alternative)
 ```bash
 # Terminate existing Zirco process
 PID=$(adb shell ps | grep org.zirco | awk '{print $2}')

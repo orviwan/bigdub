@@ -44,29 +44,61 @@ NookManager provides a completely non-destructive, standalone bootable SD card r
 
 ---
 
-## 3. Install E-Ink Launcher (ReLaunchX)
+## 3. Auto-Boot & Ultra-Low-Power Native Clock (Recommended)
 
-Android 2.1 (Eclair) stock launcher lacks high-contrast rendering and has unnecessary book carousels.
+By default, Android 2.1 boots into the Nook lockscreen or a generic launcher (`ReLaunch` / stock Nook Home), and running a full WebKit browser continuously drains battery within ~2 days.
 
-1. Connect the Nook to your host computer via USB.
+To make the Nook boot **directly into the fullscreen 91Dub watchface** and maximize untethered battery life, we include a purpose-built `57 KB` native Android 2.1 (API Level 7, Dalvik DEX `035`) Home Launcher & Clock APK (`nook_setup/apks/com.bigdub.clock.apk`, source in `nook_setup/clock_apk/`).
+
+### Key Power & Boot Features
+* **True `CATEGORY_HOME` Replacement + `BOOT_COMPLETED` Receiver**: Replaces the generic launcher screen on boot and dismisses the slide-to-unlock keyguard (`FLAG_DISMISS_KEYGUARD | FLAG_SHOW_WHEN_LOCKED`).
+* **Real Hardware Battery Gauge**: Reads the Nook's internal fuel gauge (`Intent.ACTION_BATTERY_CHANGED` / `max17042`) once per minute with zero background polling, displaying real battery percentage on the 91Dub battery bar (switchable to Day Countdown in the top touch menu).
+* **Hardware `AlarmManager.RTC_WAKEUP` Minute Ticks**: Schedules exact `:00` minute hardware RTC wakeups with zero 1-second JS polling loops and zero WebKit memory overhead (`~1.3 MB` RGB565 sprite cache vs. `35+ MB` browser footprint).
+* **Partial Screen Redraws (`invalidate(dirtyRect)`)**: Diffs every digit and status slot on each minute tick. On 53 out of every 60 minutes, **only the single `104×164` `minUnits` rectangle (`3.5%` of the screen)** is invalidated, letting `SurfaceFlinger` and the `omap3epfb` driver execute a low-energy regional E-Ink update instead of energizing the `±15V` charge pump across the entire panel.
+* **Wi-Fi Off & CPU Idle Clamping**: Powers down the `tiwlan0` Wi-Fi radio and sets the TI OMAP3621 CPU governor to `ondemand` (`300 MHz` idle floor).
+* **Built-In Wireless Maintenance Toggle**: Tap the top 80px of the screen any time to open the monochrome Settings drawer and toggle **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`) or open `ReLaunch` / Android Settings, then tap **`Wi-Fi OFF`** to return to battery mode.
+
+### One-Command Installation
+> [!IMPORTANT]
+> If connecting over USB, ensure you use a **data-capable Micro-USB cable** (many Micro-USB cables are 2-wire charge-only cables and will not appear in `lsusb` or `adb devices`). Alternatively, tap **ADB Konnect** on the Nook once to connect over Wi-Fi; the setup script will turn Wi-Fi OFF automatically when finished.
+
+```bash
+# Over USB:
+./nook_setup/scripts/setup_native_clock.sh
+
+# Or over Wireless ADB (installs, launches, and disables Wi-Fi at the end):
+./nook_setup/scripts/setup_native_clock.sh 192.168.0.188
+
+# Keep Wi-Fi enabled during testing:
+./nook_setup/scripts/setup_native_clock.sh 192.168.0.188 --keep-wifi
+```
+
+### Setting as Default Home Screen (One-Time Step)
+1. Press the physical **`n`** (Home) button on the front bezel of the Nook.
+2. Check **"Use by default for this action"** (Always) and tap **91Dub Clock**.
+3. Reboot (`adb reboot` or power-cycle) to verify — the Nook will boot straight into the 91Dub watchface.
+
+### Rebuilding the Native APK from Source
+```bash
+./nook_setup/clock_apk/build.sh
+```
+
+---
+
+## 4. Alternative Launcher & Plugged-In Display Setup (Browser Mode)
+
+If you prefer running the HTML/JS dashboard inside a browser on wall power instead of the native launcher APK, you can install **ReLaunchX** and keep the display awake while plugged in.
+
+### Install E-Ink Launcher (ReLaunchX)
+1. Connect the Nook to your host computer via USB or Wireless ADB.
 2. Sideload **ReLaunchX**:
    ```bash
    adb install ReLaunchX.apk
    ```
-3. Press the physical "n" (Home) button on the front bezel of the Nook.
-4. When prompted by Android to choose the home application, select **ReLaunchX** and tap **Always**.
-5. In ReLaunchX settings:
-   * Set theme to **High Contrast E-Ink (Monochrome)**.
-   * Enable 1-bit rendering optimizations.
+3. Press the physical "n" (Home) button, select **ReLaunchX**, and set theme to **High Contrast E-Ink (Monochrome)**.
 
----
-
-## 4. Keep Display Awake (WakeLock & Display Settings)
-
-E-ink displays require no electrical power to hold a static image, but the Android OS will sleep and stop JavaScript timers unless a wake lock is maintained or system timeout is disabled.
-
-### Option A: ADB Display Command (Plugged In)
-Run our automated script:
+### Keep Display Awake When Plugged Into Wall Power
+Run our automated script (for permanently USB-powered wall installations):
 ```bash
 ./nook_setup/scripts/setup_adb.sh
 ```
@@ -76,15 +108,6 @@ adb shell svc power stayon true
 adb shell settings put global stay_on_while_plugged_in 3
 adb shell settings put system screen_off_timeout 2147483647
 ```
-
-### Option B: WakeLock v3 APK
-1. Sideload a legacy wake lock utility:
-   ```bash
-   adb install WakeLock_v3.apk
-   ```
-2. Launch **WakeLock** from ReLaunchX.
-3. Select **`SCREEN_DIM_WAKE_LOCK`** or **`PARTIAL_WAKE_LOCK`**.
-4. Enable **Start on boot**.
 
 ---
 
@@ -163,38 +186,41 @@ Or for 100% offline local file playback:
 
 ---
 
-## 7. E-Ink Optimization & Anti-Ghosting
+## 7. E-Ink Optimization, Partial Redraws & Anti-Ghosting
 
-E-Ink Pearl displays can experience subtle ghosting after several digit transitions. The 91Dub clock engine includes tailored mitigations:
+E-Ink Pearl displays only consume display power when microcapsules change state. Both the native APK and web engine include targeted power and ghosting optimizations:
 
-1. **Minute-Only Repaint**: In standard mode (Seconds OFF), the engine wakes up on exact `:00` seconds, repainting only the changed digit images.
-2. **Built-in Waveform Reset**: Every 30 minutes (or whenever you tap the bottom touch zone), the screen executes a rapid 200ms inverted high-contrast flash, resetting the microcapsules and eliminating ghosting.
+1. **Dirty-Rect Partial Screen Redraw**: Only changed digit/icon bounding boxes are invalidated on each `:00` minute tick (`104×164` px — `3.5%` of the screen on 53/60 minutes), allowing `SurfaceFlinger` and `omap3epfb` to perform low-power regional refreshes.
+2. **6-Hour Waveform Reset**: Every 6 hours (4×/day, or whenever you tap the bottom touch zone), the screen executes a rapid black-to-white full-panel flash (`epd_refresh`), resetting microcapsules while saving ~92% of full-panel charge-pump cycles compared to 30-minute clears.
 3. **Interactive Settings Drawer**: Tap the top of the display to adjust:
    * 12-Hour / 24-Hour mode
-   * Seconds display ON/OFF
-   * Colon separator Blink vs. Solid
-   * Color theme: Classic vs. Invert ("Junkie Mode")
-   * Pebble Branding: Show vs. Hide
+   * Battery Gauge: Real Hardware `%` vs. Day Countdown `%` (native APK)
+   * Power / Maintenance: `Wi-Fi OFF` (Battery Saver) vs. `Wi-Fi+ADB` (`:5555`) (native APK)
+   * Seconds display ON/OFF & Colon Blink vs. Solid (web dashboard)
+   * Color theme: Normal vs. Outer Invert
+   * Pebble Branding: Show vs. Hide & Vertical Bezel Offset (`-14px` default)
 
 ---
 
-## 8. Real-Time Day Countdown Battery
+## 8. Battery Gauge Modes: Real Hardware Battery vs. Day Countdown
 
-The clock features an innovative ambient time-awareness mechanism using the Pebble battery indicator:
+The Pebble battery bar (`44px` wide at `4×` scale, hidden `%` digits at `100%`) supports two modes:
 
-* **How it works**:
-  * Instead of a static or disconnected battery reading, the battery gauge dynamically tracks and counts down the **remaining duration of the day**.
-  * **00:00 (Midnight)**: 100% remaining (solid 44px filled battery bar).
-  * **12:00 (Noon)**: 50% remaining (50% filled bar with `50%` digits).
-  * **23:59 (End of Day)**: 0% / 1% remaining.
-* **Calculation**:
-  $$\text{Minutes Elapsed} = \text{Hour} \times 60 + \text{Minute}$$
-  $$\text{Day Remaining \%} = \text{round}\left(\frac{1440 - \text{Minutes Elapsed}}{1440} \times 100\right)$$
-* **Manual Override via URL**:
-  You can override the day countdown with a fixed percentage by passing query parameters:
+* **Real Hardware Battery % (Default in Native APK `com.bigdub.clock`)**:
+  * Reads the Nook's internal Li-Ion fuel gauge (`Intent.ACTION_BATTERY_CHANGED` / `/sys/class/power_supply/max17042-0/capacity`) once per minute with zero background listener wakeups, and displays the charging bolt (`icon_battery_charge.png`) when USB power is connected.
+* **Ambient Day Countdown (Default in Web Dashboard & Selectable in Native APK)**:
+  * Tracks and counts down the **remaining duration of the day**:
+    * **00:00 (Midnight)**: 100% remaining (solid 44px filled battery bar).
+    * **12:00 (Noon)**: 50% remaining (22px filled bar with `50%` digits).
+    * **23:59 (End of Day)**: 0% / 1% remaining.
+  * **Calculation**:
+    $$\text{Minutes Elapsed} = \text{Hour} \times 60 + \text{Minute}$$
+    $$\text{Day Remaining \%} = \text{round}\left(\frac{1440 - \text{Minutes Elapsed}}{1440} \times 100\right)$$
+* **Web Dashboard URL Overrides**:
+  * `http://192.168.0.239:9191/?battery=hardware` (Uses browser `navigator.getBattery()` API if supported)
   * `http://192.168.0.239:9191/?battery=90` (Forces 90% fixed)
   * `http://192.168.0.239:9191/?battery=day` (Default day countdown)
-  * `http://192.168.0.239:9191/?invert=1` (Inverted Junkie Mode)
+  * `http://192.168.0.239:9191/?invert=1` (Inverted outer bezel mode)
 
 ---
 

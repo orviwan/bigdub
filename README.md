@@ -15,13 +15,14 @@ Transform an unmodified **Barnes & Noble Nook Simple Touch** (model `BNRV300`, 6
 * **Zero Device Disassembly:** Drop-in rear cavity ($128.5 \times 167.0 \times 38.0\text{ mm}$) securely holds the unmodified Nook Simple Touch with a $10.2\text{ mm}$ retaining bezel and bottom micro-USB power channel.
 * **Authentic 91Dub Watchface:** Pixel-perfect recreation derived directly from the original Pebble C source code and 1-bit bitmap assets by the original author (`orviwan`).
 * **Integer Scaled for E-Ink Pearl:** Pebble's native $144 \times 168\text{ px}$ canvas is integer-scaled $4\times$ ($576 \times 672\text{ px}$), centering into the Nook's $600 \times 800$ Pearl E-Ink display with 0 subpixel blur.
-* **100% Offline Single-File Dashboard:** `dashboard/index.html` embeds all 72 authentic bitmaps as base64 data URIs. No Wi-Fi or server required—runs completely offline from `file:///media/clock/index.html`.
-* **Engineered for Android 2.1 (Eclair):** Written in strict ES3/ES5 JavaScript for seamless compatibility with legacy Android 2.1 WebKit and Zirco Browser.
-* **Ambient Day Countdown Battery:** The battery bar and percentage dynamically track the remaining duration of the day (00:00 = 100%, 12:00 = 50%, 23:59 = 0%).
-* **E-Ink Pearl Optimizations:**
-  * **Minute-aligned ticking:** Wakes up on exact `:00` seconds in standard mode to eliminate CPU wakeups.
-  * **Anti-ghosting waveform reset:** Built-in high-contrast invert cycle every 30 minutes (or on tap) to wipe residual E-Ink particle shadows.
-  * **Interactive touch zones:** Tap the top edge to open settings (12H/24H, Seconds, Blink, Invert, Pebble logo); tap the bottom edge for a manual screen clear.
+* **Native Android 2.1 `HOME` Launcher APK (`com.bigdub.clock`):** A lightweight (`57 KB`) native Android 2.1 (API Level 7, Dalvik DEX `035`) watchface & Home replacement APK that boots straight into the 91Dub clock with zero generic launcher screen, zero WebKit RAM overhead, real Nook fuel-gauge battery percentage, hardware `AlarmManager.RTC_WAKEUP` minute alarms, and Wi-Fi-off CPU power clamping.
+* **100% Offline Single-File Web Dashboard:** `dashboard/index.html` also embeds all 72 authentic bitmaps as base64 data URIs for browser or homelab Docker (`nginx:alpine`) deployment.
+* **Real Hardware Battery or Ambient Day Countdown:** The Pebble battery bar and percentage digits read the real Nook fuel gauge (`max17042` / `BatteryManager`) in untethered battery mode, or optionally count down the remaining duration of the day (`00:00` = `100%`, `12:00` = `50%`, `23:59` = `0%`).
+* **E-Ink Pearl & Battery Optimizations:**
+  * **Partial dirty-rect screen redraws:** Both the native `ClockView.invalidate(Rect)` engine and the dirty-checked ES3/ES5 DOM engine only invalidate the changed `104×164` digit bounding box (`3.5%` of the screen on 53 out of 60 minutes), letting the Nook's `omap3epfb` controller perform low-energy regional EPD updates.
+  * **Minute-aligned hardware wakeups:** Uses `AlarmManager.RTC_WAKEUP` (native APK) or `:00`-aligned timers (web) with seconds disabled and Wi-Fi radio powered off (`tiwlan0` disabled).
+  * **Anti-ghosting waveform reset:** Built-in high-contrast invert cycle every 6 hours (4×/day instead of 48×/day to preserve `±15V` EPD charge-pump energy) or on bottom-edge tap.
+  * **Interactive touch zones & wireless maintenance escape:** Tap the top edge to open settings (`12H`/`24H`, `Real %` / `Day %`, Outer Invert, Pebble logo, vertical shift, and one-tap **Wi-Fi + Wireless ADB `:5555`** toggle); tap the bottom edge for an immediate screen clear.
 
 ---
 
@@ -61,14 +62,20 @@ Bug91Dub/
 │       ├── pebble_clock_strap_bottom.stl            # Authentic factory trimmed strap stub
 │       ├── pebble_clock_full_assembly.stl           # Full reference assembly for CAD inspection
 │       └── pebble_clock_body_PRINT_READY.3mf        # Bambu Studio / OrcaSlicer project (0.4mm nozzle)
-├── nook_setup/                         # Nook Simple Touch configuration & scripts
-│   ├── GUIDE.md                        # Step-by-step rooting & setup guide
+├── nook_setup/                         # Nook Simple Touch configuration, native APK & scripts
+│   ├── GUIDE.md                        # Step-by-step rooting, auto-boot & battery guide
+│   ├── clock_apk/                      # Native Android 2.1 (API 7) HOME launcher & clock source
+│   │   ├── AndroidManifest.xml         # CATEGORY_HOME + BOOT_COMPLETED + RTC_WAKEUP manifest
+│   │   ├── build.sh                    # Reproducible API-7 javac/d8/aapt/SHA1withRSA builder
+│   │   └── src/com/bigdub/clock/       # Dirty-rect Canvas renderer & hardware battery/power manager
 │   ├── apks/
-│   │   └── org.zirco_18.apk            # Tested Android 2.1 fullscreen browser APK
+│   │   ├── com.bigdub.clock.apk        # Compiled 57 KB native 91Dub Home Launcher & Clock APK
+│   │   └── org.zirco_18.apk            # Alternative Android 2.1 fullscreen WebKit browser APK
 │   └── scripts/
-│       ├── push_clock.sh               # One-click ADB transfer of clock to device
-│       ├── setup_adb.sh                # Display timeout and stay-awake configurator
-│       └── setup_zirco.sh              # One-command browser installer & fullscreen launcher
+│       ├── setup_native_clock.sh       # One-command installer for auto-boot native battery clock
+│       ├── push_clock.sh               # One-click ADB transfer of web clock to device
+│       ├── setup_adb.sh                # Display timeout and stay-awake configurator (plugged-in)
+│       └── setup_zirco.sh              # Alternative browser installer & fullscreen launcher
 └── server/                             # Optional local server hosting
     ├── server.py                       # Standalone Python HTTP server with e-ink no-cache headers
     └── docker-compose.yml              # Turnkey Docker Compose configuration for homelabs
@@ -107,16 +114,32 @@ Check out the **[Watchface Conversion Guide](docs/CONVERTING_WATCHFACES.md)** fo
 
 ## Software Deployment
 
-### Option A: Zero-Network Offline Mode (Recommended)
-Because `dashboard/index.html` has zero external dependencies, you can run it completely disconnected from the network:
+### Option A: Native Auto-Boot `HOME` Launcher APK — Maximum Battery Life (Recommended)
+For untethered battery operation and instant boot-to-watchface startup (bypassing the generic launcher screen and WebKit browser overhead):
+
+1. Connect your rooted Nook via a **data-capable** Micro-USB cable or Wireless ADB (`adb connect <NOOK_IP>:5555`).
+2. Run the automated native installer (installs `com.bigdub.clock.apk`, configures real hardware battery %, clamps idle CPU clocks, launches the watchface, and powers off Wi-Fi):
+   ```bash
+   # Over USB:
+   ./nook_setup/scripts/setup_native_clock.sh
+
+   # Or over Wireless ADB (automatically turns Wi-Fi OFF at the end):
+   ./nook_setup/scripts/setup_native_clock.sh <NOOK_IP>
+   ```
+3. **One-time default Home binding:** Press the physical front **`n`** button once, check **"Use by default for this action"**, and select **91Dub Clock**. Every reboot now starts directly on the 91Dub watchface.
+4. **Re-enabling Wi-Fi + Wireless ADB later:** Tap the top 80px of the screen to open Settings and tap **`Wi-Fi+ADB`** (`<NOOK_IP>:5555`), then tap **`Wi-Fi OFF`** when finished.
+
+### Option B: Zero-Network Offline Web Mode (Zirco Browser)
+Because `dashboard/index.html` has zero external dependencies, you can also run the HTML/JS version offline inside Zirco Browser:
 
 1. Connect your rooted Nook via USB or ADB over Wi-Fi (`adb connect <NOOK_IP>:5555`).
-2. Sideload Zirco Browser and launch the offline clock in full screen:
+2. Push the standalone HTML file and launch Zirco Browser in full screen:
    ```bash
-   ./nook_setup/scripts/setup_zirco.sh <NOOK_IP> file:///media/clock/index.html
+   ./nook_setup/scripts/push_clock.sh <NOOK_IP>
+   ./nook_setup/scripts/setup_zirco.sh <NOOK_IP> file:///sdcard/clock/index.html
    ```
 
-### Option B: Local Network Server (Docker on NAS or Raspberry Pi)
+### Option C: Local Network Server (Docker on NAS or Raspberry Pi)
 Run the lightweight server on a Raspberry Pi or homelab server (e.g. `pro-nas`):
 
 ```bash
